@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h2>Production Entry</h2>
+
+<form method="post">
+
+<div style="display:flex;gap:20px;">
+
+<div>
+<label>Date</label><br>
+<input type="date" name="entry_date" value="{{today}}">
+</div>
+
+<div>
+<label>Section</label><br>
+
+<select name="section" id="sectionSelect">
+
+{% for s in sections %}
+<option value="{{ s.section }}">{{ s.section }}</option>
+{% endfor %}
+
+</select>
+
+</div>
+
+<div>
+<label>Process</label><br>
+
+<select name="process_id" id="processSelect">
+
+{% for p in processes %}
+<option value="{{ p.id }}">{{ p.process_name }}</option>
+{% endfor %}
+
+</select>
+
+</div>
+
+</div>
+
+<br>
+
+<div style="display:flex;gap:20px;">
+
+<div>
+<label>Operator</label><br>
+
+<input list="operators" name="operator_name">
+
+<datalist id="operators">
+{% for o in operators %}
+<option value="{{ o.operator_name }} - {{ o.operator_id }}">
+{% endfor %}
+</datalist>
+
+</div>
+
+<div>
+
+<label>Buyer / Style / Color / Item</label><br>
+
+<input list="masters" name="master_label" style="width:460px;">
+
+<datalist id="masters">
+
+{% for m in master_rows %}
+<option value="{{ m.label }}">
+{% endfor %}
+
+</datalist>
+
+</div>
+
+</div>
+
+<br>
+
+<label>Production Qty</label><br>
+<input type="number" name="qty" required>
+
+<br><br>
+
+<button type="submit">Save Entry</button>
+
+</form>
+
+<script>
+
+document.getElementById("sectionSelect").addEventListener("change", function(){
+
+let section = this.value;
+
+fetch("/get_processes/" + section)
+
+.then(response => response.json())
+
+.then(data => {
+
+let processDropdown = document.getElementById("processSelect");
+
+processDropdown.innerHTML = "";
+
+data.forEach(function(p){
+
+let option = document.createElement("option");
+
+option.value = p.id;
+option.text = p.process_name;
+
+processDropdown.appendChild(option);
+
+});
+
+});
+
+});
+
+</script>
+
+{% endblock %}

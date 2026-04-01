@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h2>Edit Operator</h2>
+
+<form method="post">
+
+Operator Name<br>
+<input name="operator_name" value="{{op.operator_name}}"><br><br>
+
+Operator ID<br>
+<input name="operator_id" value="{{op.operator_id}}"><br><br>
+
+<button type="submit">Update Operator</button>
+
+</form>
+
+{% endblock %}
