@@ -1,0 +1,359 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<style>
+
+.modal{
+display:none;
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,0.4);
+justify-content:center;
+align-items:center;
+}
+
+.modal-box{
+background:#fff0f0;
+padding:20px;
+border-radius:8px;
+width:320px;
+box-shadow:0 5px 20px rgba(0,0,0,0.3);
+border:1px solid #ffb3b3;
+}
+
+.modal-box input{
+width:100%;
+margin-top:6px;
+margin-bottom:12px;
+height:32px;
+}
+
+.modal-box button{
+padding:6px 14px;
+cursor:pointer;
+}
+
+.batch-box{
+background:white;
+padding:20px;
+border-radius:10px;
+box-shadow:0 4px 15px rgba(0,0,0,0.15);
+margin-top:30px;
+}
+
+.batch-table{
+width:100%;
+border-collapse:collapse;
+}
+
+.batch-table th,
+.batch-table td{
+border:1px solid #ddd;
+padding:8px;
+text-align:center;
+}
+
+.batch-table th{
+background:#f2f2f2;
+font-weight:bold;
+}
+
+.action-btn{
+background:#ffeaea;
+border:1px solid #ff9999;
+padding:8px 14px;
+border-radius:4px;
+cursor:pointer;
+font-weight:bold;
+}
+
+.action-btn:hover{
+background:#ffd6d6;
+}
+
+</style>
+
+
+<h2>Create Batch</h2>
+
+<form method="post">
+
+<div style="display:flex; gap:20px; align-items:flex-end;">
+
+<div>
+<label>Date</label><br>
+<input type="date" name="batch_date" value="{{ today }}">
+</div>
+
+<div>
+<label>Buyer / Style / Color / Item</label><br>
+
+<input list="masters" name="master_label" style="width:460px;">
+
+<datalist id="masters">
+
+{% for m in master_rows %}
+<option value="{{ m.label }}">
+{% endfor %}
+
+</datalist>
+
+</div>
+
+<div>
+<label>Wash Type</label><br>
+<select name="wash_type">
+<option>1st Wash</option>
+<option>Final Wash</option>
+<option>2nd Wash</option>
+<option>Neutral Wash</option>
+<option>Acid Wash</option>
+<option>Re-Wash(1st Wash)</option>
+<option>Re-Wash(Final Wash)</option>
+<option>Re-Wash(Re-Neutral)</option>
+</select>
+</div>
+
+<div>
+<label>Priority</label><br>
+<select name="priority">
+<option>1</option>
+<option>2</option>
+<option>3</option>
+</select>
+</div>
+
+</div>
+
+<div style="display:flex; gap:20px; align-items:flex-end; margin-top:15px;">
+
+
+<div>
+<label>Bundle Type</label><br>
+<select name="bundle_type">
+<option>Bulk</option>
+<option>1st Bulk</option>
+<option>Blanket</option>
+<option>Waist Loop</option>
+<option>Drawstring</option>
+<option>Patch Fabric</option>
+</select>
+</div>
+
+
+<div>
+<label>Batch Quantity</label><br>
+<input name="qty">
+</div>
+
+<div>
+<label>Batch Weight (KG)</label><br>
+<input name="weight">
+</div>
+
+<div>
+<label>Shade Group</label><br>
+<select name="shade_group">
+<option>Shade Dark</option>
+<option>Shade Light</option>
+<option>Medium Shade</option>
+<option>Mixed Shade</option>
+<option>Medium Light</option>
+<option>Medium Dark</option>
+<option>Without Shade Segregation</option>
+</select>
+</div>
+
+<button type="submit" style="height:40px;margin-top:25px;width:200px;">
+Create Batch
+</button>
+
+</div>
+
+</form>
+
+
+<div class="batch-box">
+
+<h3>Batch List</h3>
+
+<table class="batch-table">
+
+<tr>
+<th>Batch No.</th>
+<th>Buyer / Style / Color / Item</th>
+<th>Wash Type</th>
+<th>Batch Qty</th>
+<th>Batch Weight</th>
+<th>Priority</th>
+<th>Creation Time</th>
+<th>Action</th>
+</tr>
+
+{% for b in batches %}
+
+<tr>
+
+<td>{{ b.batch_number }}</td>
+
+<td>
+{{ b.buyer }} /
+{{ b.style }} /
+{{ b.color }} /
+{{ b.item }}
+</td>
+
+<td>{{ b.wash_type }}</td>
+
+<td>{{ b.batch_qty }}</td>
+
+<td>{{ b.batch_weight|int }}</td>
+
+<td>{{ b.priority }}</td>
+
+<td>{{ b.created_at }}</td>
+
+<td>
+
+<button type="button" class="action-btn"
+onclick="openModal(
+'{{ b.batch_number }}',
+'{{ b.wash_type }}',
+'{{ b.batch_qty }}',
+'{{ b.batch_weight }}'
+)"
+Print/Delete
+</button>
+
+</td>
+
+</tr>
+
+{% endfor %}
+
+</table>
+
+</div>
+
+
+<div id="batchModal" class="modal">
+
+<div class="modal-box">
+
+<h3>Batch Action</h3>
+
+<label>Wash Type</label>
+<input id="washType">
+
+<label>Batch Qty</label>
+<input id="batchQty">
+
+<label>Batch Weight</label>
+<input id="batchWeight">
+
+<div style="margin-top:20px;display:flex;gap:10px;">
+
+<button type="button" id="confirmBtn">Confirm</button>
+
+<button type="button" id="deleteBtn" style="background:red;color:white;">Delete</button>
+
+<button type="button" id="printBtn"
+onclick="printBatch()"
+style="display:none;background:#184d78;color:white;">
+Print
+</button>
+
+</div>
+
+</div>
+
+</div>
+
+
+<script>
+
+let currentBatch = null;
+
+function openModal(batch_no,wash,qty,weight){
+
+currentBatch = batch_no;
+
+document.getElementById("batchModal").style.display="flex"
+
+document.getElementById("washType").value = wash
+document.getElementById("batchQty").value = qty
+document.getElementById("batchWeight").value = parseInt(weight)
+}
+document.getElementById("confirmBtn").onclick=function(){
+
+let wash = document.getElementById("washType").value
+let qty = document.getElementById("batchQty").value
+let weight = document.getElementById("batchWeight").value
+
+fetch("/update_batch",{
+method:"POST",
+headers:{
+"Content-Type":"application/json"
+},
+body:JSON.stringify({
+batch_no:currentBatch,
+wash_type:wash,
+qty:qty,
+weight:weight
+})
+})
+.then(res=>res.json())
+.then(data=>{
+
+alert("Batch Updated Successfully")
+
+// print button show
+document.getElementById("printBtn").style.display="inline-block"
+
+})
+
+}
+
+document.getElementById("deleteBtn").onclick=function(){
+
+if(!currentBatch) return;
+
+if(confirm("Are you sure to delete this batch?")){
+
+fetch("/delete_batch/"+currentBatch,{
+method:"POST"
+})
+.then(res=>res.json())
+.then(data=>{
+location.reload()
+})
+
+}
+
+}
+function printBatch(){
+
+if(currentBatch){
+window.open("/print_batch/" + currentBatch, "_blank")
+}
+
+}
+var modal = document.getElementById("batchModal")
+
+window.onclick = function(event){
+
+if(event.target == modal){
+
+modal.style.display="none"
+
+}
+
+}
+
+</script>
+
+{% endblock %}
