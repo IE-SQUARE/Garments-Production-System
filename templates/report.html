@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<style>
+
+.report-table{
+border-collapse:collapse;
+width:100%;
+background:white;
+}
+
+.report-table th,
+.report-table td{
+border:1px solid #ccc;
+padding:8px;
+text-align:center;
+}
+
+.report-table th{
+background:#f2f2f2;
+font-weight:bold;
+}
+
+</style>
+
+<h2>Production Report</h2>
+
+<form method="get" style="margin-bottom:20px;">
+
+<label>From</label>
+<input type="date" name="from_date" value="{{ from_date }}">
+<label>To</label>
+<input type="date" name="to_date" value="{{ to_date }}"> 
+<label>Section</label>
+<select name="section" style="width:160px;">
+
+<option value="">All</option>
+
+{% for s in sections %}
+<option value="{{ s.section }}"
+{% if section == s.section %}selected{% endif %}>
+{{ s.section }}
+</option>
+{% endfor %}
+</select>
+<button type="submit">Submit</button>
+
+<button id="exportButton" type="button" style="padding: 8px 14px; background: #2b7cff; color: white; border: none; border-radius: 4px; margin-left: 10px; cursor: pointer; font-family: inherit; font-size: 14px;">
+    Export to Excel
+</button>
+
+</form>
+
+<table class="report-table">
+
+<tr>
+
+<th>SL No.</th>
+<th>Buyer</th>
+<th>Style</th>
+<th>Color</th>
+<th>Process Name</th>
+<th>Day</th>
+<th>Night</th>
+<th>Total</th>
+<th>Cum. Total</th>
+
+</tr>
+
+{% set cum_total = 0 %}
+
+{% for r in rows %}
+
+{% set cum_total = cum_total + r.total_qty %}
+
+<tr>
+
+<td>{{ loop.index }}</td>
+<td>{{ r.buyer_name }}</td>
+<td>{{ r.style_name }}</td>
+<td>{{ r.color_name }}</td>
+<td>{{ r.process_name }}</td>
+<td>{{ r.day_qty }}</td>
+<td>{{ r.night_qty }}</td>
+<td>{{ r.total_qty }}</td>
+<td>{{ cum_total }}</td>
+
+</tr>
+
+{% endfor %}
+
+</table>
+
+<script>
+document.getElementById('exportButton').onclick = function() {
+    let table = document.querySelector(".report-table"); // আপনার টেবিল ক্লাস
+    if (!table || table.rows.length <= 1) {
+        alert("টেবিলে কোনো ডাটা নেই!");
+        return;
+    }
+
+    let rows = Array.from(table.rows);
+    let headers = Array.from(rows[0].cells).map(cell => cell.innerText);
+    let reportData = rows.slice(1).map(row => {
+        let obj = {};
+        Array.from(row.cells).forEach((cell, i) => {
+            obj[headers[i]] = cell.innerText;
+        });
+        return obj;
+    });
+
+    // এখানে অবশ্যই /export_excel দিতে হবে, /export_report নয়
+    fetch('/export_excel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ report_data: reportData })
+    })
+    .then(response => {
+        if (response.ok) return response.blob();
+        throw new Error('Export failed');
+    })
+    .then(blob => {
+        let url = window.URL.createObjectURL(blob);
+        let a = document.createElement('a');
+        a.href = url;
+        a.download = 'Production_Report.xlsx';
+        a.click();
+    })
+    .catch(err => alert("Error: " + err.message));
+};
+</script>
+
+{% endblock %}
