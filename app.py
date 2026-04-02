@@ -77,7 +77,7 @@ def login():
         password = request.form.get("password")
 
         conn = db()
-        cur = conn.cursor(dictionary=True)
+        cur = conn.cursor()
 
         cur.execute("SELECT * FROM users WHERE user_id=%s",(user_id,))
         user = cur.fetchone()
@@ -123,7 +123,7 @@ def dashboard():
 def entry():
 
     conn = db()
-    cur = conn.cursor(dictionary=True)
+    cur = conn.cursor()
 
     # sections
     cur.execute("""
@@ -269,7 +269,7 @@ def entry():
 def get_processes(section):
 
     conn = db()
-    cur = conn.cursor(dictionary=True)
+    cur = conn.cursor()
 
     cur.execute("""
     SELECT id,process_name
@@ -293,7 +293,7 @@ def get_processes(section):
 def report():
 
     conn = db()
-    cur = conn.cursor(dictionary=True)
+    cur = conn.cursor()
 
     cur.execute("""
     SELECT DISTINCT section
@@ -379,7 +379,7 @@ ORDER BY buyer_name DESC
 def users():
 
     conn = db()
-    cur = conn.cursor(dictionary=True)
+    cur = conn.cursor()
 
     cur.execute("SELECT * FROM users")
     users = cur.fetchall()
@@ -399,7 +399,7 @@ def users():
 def shifts():
 
     conn = db()
-    cur = conn.cursor(dictionary=True)
+    cur = conn.cursor()
 
     if request.method == "POST":
 
@@ -467,7 +467,7 @@ def create_batch():
     today = date.today()
 
     conn = db()
-    cur = conn.cursor(dictionary=True)
+    cur = conn.cursor()
 
     if request.method == "POST":
 
@@ -552,7 +552,7 @@ ORDER BY buyer,style,color,item
 def print_batch(batch_no):
 
     conn = db()
-    cur = conn.cursor(dictionary=True)
+    cur = conn.cursor()
 
     cur.execute("SELECT * FROM batches WHERE batch_number=%s",(batch_no,))
     batch = cur.fetchone()
@@ -610,7 +610,7 @@ def update_batch():
 def batch_info(batch_no):
 
     conn = db()
-    cur = conn.cursor(dictionary=True)
+    cur = conn.cursor()
 
     cur.execute("""
         SELECT *
@@ -634,7 +634,7 @@ def operator_status():
     section = request.args.get("section")
 
     conn = db()
-    cur = conn.cursor(dictionary=True)
+    cur = conn.cursor()
 
     query = """
     SELECT
@@ -698,7 +698,7 @@ WHERE 1=1
 def operators():
 
     conn = db()
-    cur = conn.cursor(dictionary=True)
+    cur = conn.cursor()
 
     if request.method == "POST":
 
@@ -757,7 +757,7 @@ def enable_operator(oid):
 def edit_operator(oid):
 
     conn = db()
-    cur = conn.cursor(dictionary=True)
+    cur = conn.cursor()
 
     if request.method == "POST":
 
@@ -801,7 +801,7 @@ def operator_detail():
         date = datetime.today().strftime("%Y-%m-%d")
 
     conn = db()
-    cur = conn.cursor(dictionary=True)
+    cur = conn.cursor()
 
     query = """
     SELECT
@@ -846,7 +846,7 @@ def operator_detail():
 def master_data():
 
     conn = db()
-    cur = conn.cursor(dictionary=True)
+    cur = conn.cursor()
 
     if request.method == "POST":
 
@@ -894,7 +894,7 @@ def enable_style(id):
 def get_operations(section):
 
     conn = db()
-    cur = conn.cursor(dictionary=True)
+    cur = conn.cursor()
 
     cur.execute("""
     SELECT process_name AS name
@@ -915,7 +915,7 @@ def get_operations(section):
 def process_target():
 
     conn = db()
-    cur = conn.cursor(dictionary=True)
+    cur = conn.cursor()
 
     # dropdown data
     cur.execute("""
