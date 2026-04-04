@@ -1071,40 +1071,45 @@ def bulk_import_buyer():
 @app.route('/style_details')
 @login_required
 def style_details():
-    try:
-        # সার্চ প্যারামিটার নেওয়া
-        buyer = request.args.get('buyer', '').strip()
-        style = request.args.get('style', '').strip()
+    selected_info = request.args.get('style_info', '').strip()
+    
+    conn = db()
+    cur = conn.cursor()
+    
+    # ড্রপডাউনের জন্য বায়ার/স্টাইল/কালার/আইটেম এর লিস্ট তৈরি করা
+    cur.execute("""
+        SELECT DISTINCT 
+            buyer_name || ' / ' || style_name || ' / ' || color || ' / ' || item_name 
+        FROM master_data 
+        ORDER BY 1
+    """)
+    style_list = [row[0] for row in cur.fetchall()]
+    
+    details_data = []
+    if selected_info:
+        # সিলেক্ট করা ইনফোকে আবার আলাদা করে বায়ার এবং স্টাইল বের করা
+        parts = selected_info.split(' / ')
+        buyer = parts[0]
+        style = parts[1]
         
-        conn = db()
-        cur = conn.cursor()
+        cur.execute("""
+            SELECT section, process_name, SUM(production_qty) 
+            FROM production_entries 
+            WHERE buyer_name = %s AND style_name = %s
+            GROUP BY section, process_name
+            ORDER BY section
+        """, (buyer, style))
+        details_data = cur.fetchall()
         
-        details_data = []
-        if buyer or style:
-            # এখানে নিশ্চিত করুন আপনার টেবিলের নাম 'production_entries'
-            query = """
-                SELECT section, process_name, SUM(production_qty) 
-                FROM production_entries 
-                WHERE buyer_name ILIKE %s AND style_name ILIKE %s
-                GROUP BY section, process_name
-                ORDER BY section
-            """
-            cur.execute(query, (f'%{buyer}%', f'%{style}%'))
-            details_data = cur.fetchall()
-            
-        cur.close()
-        conn.close()
-        
-        # 'name' এবং 'role' সেশন থেকে নেওয়া হচ্ছে যেন base.html ঠিক থাকে
-        return render_template('style_details.html', 
-                               details_data=details_data, 
-                               buyer=buyer, 
-                               style=style,
-                               name=session.get('name'), 
-                               role=session.get('role'))
-    except Exception as e:
-        print(f"Error: {e}")
-        return f"Database Error: {e}. Please check if table 'production_entries' exists."
+    cur.close()
+    conn.close()
+    
+    return render_template('style_details.html', 
+                           details_data=details_data, 
+                           style_list=style_list, 
+                           selected_info=selected_info,
+                           name=session.get('name'), 
+                           role=session.get('role'))
 
 if __name__ == "__main__":
 
