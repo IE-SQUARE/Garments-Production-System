@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block content %}
+<div style="padding: 20px;">
+    <h2 style="color: #184d78;">Style Details</h2>
+    
+    <form method="GET" action="/style_details" style="margin-bottom:20px; display:flex; gap:10px; background: white; padding: 15px; border-radius: 8px; border: 1px solid #ddd;">
+        <input type="text" name="buyer" placeholder="Buyer Name" value="{{ buyer or '' }}">
+        <input type="text" name="style" placeholder="Style Name" value="{{ style or '' }}">
+        <button type="submit" style="background: #184d78; color: white; border: none; padding: 8px 20px; border-radius: 4px; cursor: pointer;">Search</button>
+    </form>
+
+    <div style="background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="background: #184d78; color: white; text-align: left;">
+                    <th style="padding: 12px; border: 1px solid #ddd;">SL No.</th>
+                    <th style="padding: 12px; border: 1px solid #ddd;">Section</th>
+                    <th style="padding: 12px; border: 1px solid #ddd;">Process Name</th>
+                    <th style="padding: 12px; border: 1px solid #ddd;">Production Qty</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in details_data %}
+                <tr>
+                    <td style="padding: 10px; border: 1px solid #ddd;">{{ loop.index }}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd;">{{ row[0] }}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd;">{{ row[1] }}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold; color: #184d78;">{{ row[2] }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="4" style="text-align: center; padding: 20px; color: #666;">Enter Buyer/Style to see details.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
