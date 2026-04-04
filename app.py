@@ -1076,7 +1076,7 @@ def style_details():
     conn = db()
     cur = conn.cursor()
     
-    # ড্রপডাউনের জন্য বায়ার/স্টাইল/কালার/আইটেম এর লিস্ট তৈরি করা
+    # ১. ড্রপডাউনের জন্য মাস্টার ডাটা থেকে স্টাইল লিস্ট আনা
     cur.execute("""
         SELECT DISTINCT 
             buyer_name || ' / ' || style_name || ' / ' || color || ' / ' || item_name 
@@ -1086,27 +1086,34 @@ def style_details():
     style_list = [row[0] for row in cur.fetchall()]
     
     details_data = []
+    
+    # ২. সিলেক্ট করা স্টাইলের কিউমুলেটিভ (Cumulative) ডাটা ক্যালকুলেট করা
     if selected_info:
-        # সিলেক্ট করা ইনফোকে আবার আলাদা করে বায়ার এবং স্টাইল বের করা
-        parts = selected_info.split(' / ')
-        buyer = parts[0]
-        style = parts[1]
-        
-        cur.execute("""
-            SELECT section, process_name, SUM(production_qty) 
-            FROM production_entries 
-            WHERE buyer_name = %s AND style_name = %s
-            GROUP BY section, process_name
-            ORDER BY section
-        """, (buyer, style))
-        details_data = cur.fetchall()
-        
+        try:
+            parts = selected_info.split(' / ')
+            buyer = parts[0]
+            style = parts[1]
+            color = parts[2]
+            item = parts[3]
+            
+            # প্রসেস অনুযায়ী সব প্রোডাকশন কোয়ান্টিটি যোগ (Sum) করা হচ্ছে
+            cur.execute("""
+                SELECT section, process_name, SUM(production_qty) as total_qty
+                FROM production_entries 
+                WHERE buyer_name = %s AND style_name = %s AND color = %s AND item_name = %s
+                GROUP BY section, process_name
+                ORDER BY section, process_name
+            """, (buyer, style, color, item))
+            details_data = cur.fetchall()
+        except Exception as e:
+            print(f"Error fetching cumulative data: {e}")
+            
     cur.close()
     conn.close()
     
     return render_template('style_details.html', 
-                           details_data=details_data, 
                            style_list=style_list, 
+                           details_data=details_data, 
                            selected_info=selected_info,
                            name=session.get('name'), 
                            role=session.get('role'))
