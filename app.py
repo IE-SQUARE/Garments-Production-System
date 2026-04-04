@@ -1071,7 +1071,6 @@ def bulk_import_buyer():
 @app.route('/style_details')
 @login_required
 def style_details():
-    # ড্রপডাউন থেকে সিলেক্ট করা ভ্যালু নেওয়া
     selected_info = request.args.get('style_info', '').strip()
     conn = db()
     cur = conn.cursor()
@@ -1080,40 +1079,36 @@ def style_details():
     details_data = []
     
     try:
-        # ১. ড্রপডাউনের জন্য master_data থেকে ডাটা আনা (Buyer/Style/Color/Item)
-        # Style Update পেজে যা আপলোড করবেন তা এখানে অটো চলে আসবে
+        # Style Update পেজ থেকে সব ডাটা ড্রপডাউনে নিয়ে আসা
         cur.execute("""
             SELECT DISTINCT 
-                buyer || ' / ' || style || ' / ' || color || ' / ' || item AS info
+                buyer || ' / ' || style || ' / ' || color || ' / ' || item AS label
             FROM master_data 
             WHERE is_active=1
-            ORDER BY 1
+            ORDER BY buyer, style
         """)
-        # RealDictCursor ব্যবহারের কারণে row['info'] হিসেবে লিস্ট তৈরি
-        style_list = [row['info'] for row in cur.fetchall()]
+        rows = cur.fetchall()
+        style_list = [r['label'] for r in rows]
         
         if selected_info:
-            # সিলেক্ট করা টেক্সটকে ভেঙে আলাদা করা
             parts = selected_info.split(' / ')
             if len(parts) == 4:
                 b, s, c, i = parts
                 
-                # ২. কিউমুলেটিভ টোটাল বের করার কুয়েরি (প্রসেস অনুযায়ী যোগফল)
-                # production_entries টেবিলের কলাম নাম অনুযায়ী ফিল্টার করা হয়েছে
+                # প্রসেস অনুযায়ী কিউমুলেটিভ টোটাল (সব এন্ট্রির যোগফল)
                 cur.execute("""
-                    SELECT section, process_name, SUM(production_qty) as total_qty
+                    SELECT section, process_name, SUM(production_qty) as total
                     FROM production_entries 
                     WHERE buyer_name = %s AND style_name = %s AND color_name = %s AND item_name = %s
                     GROUP BY section, process_name
-                    ORDER BY section, process_name
+                    ORDER BY section
                 """, (b, s, c, i))
                 
-                # ডাটাবেস রো-কে লিস্টে রূপান্তর করা যেন HTML এ row[0], row[1] কাজ করে
                 res = cur.fetchall()
-                details_data = [[r['section'], r['process_name'], r['total_qty']] for r in res]
+                details_data = [[r['section'], r['process_name'], r['total']] for r in res]
                 
     except Exception as e:
-        print(f"Database Error: {e}")
+        print(f"Error: {e}")
         
     cur.close()
     conn.close()
@@ -1121,9 +1116,7 @@ def style_details():
     return render_template('style_details.html', 
                            style_list=style_list, 
                            details_data=details_data, 
-                           selected_info=selected_info,
-                           name=session.get('name'), 
-                           role=session.get('role'))
+                           selected_info=selected_info)
 
 if __name__ == "__main__":
 
