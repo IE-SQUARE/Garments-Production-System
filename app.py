@@ -1072,42 +1072,42 @@ def bulk_import_buyer():
 @login_required
 def style_details():
     selected_info = request.args.get('style_info', '').strip()
-    
     conn = db()
     cur = conn.cursor()
     
-    # ১. ড্রপডাউনের জন্য মাস্টার ডাটা থেকে স্টাইল লিস্ট আনা
-    cur.execute("""
-        SELECT DISTINCT 
-            buyer_name || ' / ' || style_name || ' / ' || color || ' / ' || item_name 
-        FROM master_data 
-        ORDER BY 1
-    """)
-    style_list = [row[0] for row in cur.fetchall()]
-    
+    style_list = []
     details_data = []
     
-    # ২. সিলেক্ট করা স্টাইলের কিউমুলেটিভ (Cumulative) ডাটা ক্যালকুলেট করা
-    if selected_info:
-        try:
+    try:
+        # master_data টেবিল থেকে ড্রপডাউন লিস্ট তৈরি
+        # এখানে নিশ্চিত করুন আপনার কলামের নামগুলো সঠিক (যেমন: buyer_name না হলে buyer দিন)
+        cur.execute("""
+            SELECT DISTINCT 
+                buyer_name || ' / ' || style_name || ' / ' || color || ' / ' || item_name 
+            FROM master_data 
+            ORDER BY 1
+        """)
+        style_list = [row[0] for row in cur.fetchall()]
+        
+        if selected_info:
             parts = selected_info.split(' / ')
-            buyer = parts[0]
-            style = parts[1]
-            color = parts[2]
-            item = parts[3]
-            
-            # প্রসেস অনুযায়ী সব প্রোডাকশন কোয়ান্টিটি যোগ (Sum) করা হচ্ছে
-            cur.execute("""
-                SELECT section, process_name, SUM(production_qty) as total_qty
-                FROM production_entries 
-                WHERE buyer_name = %s AND style_name = %s AND color = %s AND item_name = %s
-                GROUP BY section, process_name
-                ORDER BY section, process_name
-            """, (buyer, style, color, item))
-            details_data = cur.fetchall()
-        except Exception as e:
-            print(f"Error fetching cumulative data: {e}")
-            
+            if len(parts) == 4:
+                buyer, style, color, item = parts
+                
+                # কিউমুলেটিভ টোটাল (SUM) বের করার কুয়েরি
+                cur.execute("""
+                    SELECT section, process_name, SUM(production_qty)
+                    FROM production_entries 
+                    WHERE buyer_name = %s AND style_name = %s AND color = %s AND item_name = %s
+                    GROUP BY section, process_name
+                    ORDER BY section, process_name
+                """, (buyer, style, color, item))
+                details_data = cur.fetchall()
+                
+    except Exception as e:
+        print(f"Error logic: {e}")
+        # যদি buyer_name কলাম না পায়, তবে এখানে প্রিন্ট হবে
+        
     cur.close()
     conn.close()
     
