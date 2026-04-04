@@ -65,7 +65,7 @@ margin:0;
 font-family:Arial;
 background:#eef1f5;
 }
-/* টপবার এবং সাইডবার দুটোর জন্যই একই নীল রং (#184d78) */
+/* টপবার এবং সাইডবার স্টাইল */
 
 .topbar {
     position: fixed;
@@ -73,14 +73,14 @@ background:#eef1f5;
     left: 0;
     width: 100%;
     height: 60px;
-    background: #184d78 !important; /* নীল রং নিশ্চিত করার জন্য !important ব্যবহার করা হয়েছে */
-    color: white;
+    background-color: #184d78 !important;
+    color: white !important;
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 0 25px;
     box-sizing: border-box;
-    z-index: 1000;
+    z-index: 1001;
 }
 
 .sidebar {
@@ -89,28 +89,34 @@ background:#eef1f5;
     left: 0;
     width: 220px;
     height: calc(100vh - 60px);
-    background: #184d78 !important; /* সাইডবারকেও একই নীল রং দেওয়া হলো */
-    padding-top: 20px;
+    background-color: #184d78 !important; /* টপবারের সাথে ম্যাচিং নীল */
+    padding-top: 10px;
     display: flex;
     flex-direction: column;
-    box-shadow: 2px 0 5px rgba(0,0,0,0.2);
-    z-index: 999;
+    z-index: 1000;
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .sidebar a {
-    padding: 12px 20px;
+    padding: 15px 20px;
     text-decoration: none;
     font-size: 15px;
-    color: #ffffff; /* লেখার ফন্ট সাদা */
+    color: #ffffff !important; /* লেখার রঙ একদম সাদা নিশ্চিত করবে */
     display: block;
+    font-weight: bold;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    transition: 0.3s;
 }
 
 .sidebar a:hover {
-    background: rgba(255, 255, 255, 0.2); /* মাউস নিলে হালকা উজ্জ্বল হবে */
-    color: #fff;
-    padding-left: 25px;
+    background-color: #1a5a8c !important; /* মাউস নিলে সামান্য রঙ পরিবর্তন */
+    color: #ffffff !important;
+}
+
+/* কন্টেন্ট যেন সাইডবারের নিচে না যায় */
+.content {
+    margin-left: 230px !important;
+    margin-top: 80px !important;
+    padding: 20px;
 }
 
 /* মেইন কন্টেন্ট যেন সাইডবারের নিচে না চলে যায় */
