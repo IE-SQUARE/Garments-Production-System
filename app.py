@@ -1071,27 +1071,40 @@ def bulk_import_buyer():
 @app.route('/style_details')
 @login_required
 def style_details():
-    buyer = request.args.get('buyer', '').strip()
-    style = request.args.get('style', '').strip()
-    
-    conn = db()
-    cur = conn.cursor()
-    
-    details_data = []
-    if buyer or style:
-        # বায়ার বা স্টাইল দিয়ে ফিল্টার করে সেকশন ও প্রসেস অনুযায়ী যোগফল
-        cur.execute("""
-            SELECT section, process_name, SUM(production_qty) 
-            FROM production_entries 
-            WHERE buyer_name ILIKE %s AND style_name ILIKE %s
-            GROUP BY section, process_name
-            ORDER BY section
-        """, (f'%{buyer}%', f'%{style}%'))
-        details_data = cur.fetchall()
+    try:
+        # সার্চ প্যারামিটার নেওয়া
+        buyer = request.args.get('buyer', '').strip()
+        style = request.args.get('style', '').strip()
         
-    cur.close()
-    conn.close()
-    return render_template('style_details.html', details_data=details_data, buyer=buyer, style=style)
+        conn = db()
+        cur = conn.cursor()
+        
+        details_data = []
+        if buyer or style:
+            # এখানে নিশ্চিত করুন আপনার টেবিলের নাম 'production_entries'
+            query = """
+                SELECT section, process_name, SUM(production_qty) 
+                FROM production_entries 
+                WHERE buyer_name ILIKE %s AND style_name ILIKE %s
+                GROUP BY section, process_name
+                ORDER BY section
+            """
+            cur.execute(query, (f'%{buyer}%', f'%{style}%'))
+            details_data = cur.fetchall()
+            
+        cur.close()
+        conn.close()
+        
+        # 'name' এবং 'role' সেশন থেকে নেওয়া হচ্ছে যেন base.html ঠিক থাকে
+        return render_template('style_details.html', 
+                               details_data=details_data, 
+                               buyer=buyer, 
+                               style=style,
+                               name=session.get('name'), 
+                               role=session.get('role'))
+    except Exception as e:
+        print(f"Error: {e}")
+        return f"Database Error: {e}. Please check if table 'production_entries' exists."
 
 if __name__ == "__main__":
 
