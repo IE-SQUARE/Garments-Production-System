@@ -1079,34 +1079,39 @@ def style_details():
     details_data = []
     
     try:
-        # master_data টেবিল থেকে ড্রপডাউন লিস্ট তৈরি
-        # এখানে নিশ্চিত করুন আপনার কলামের নামগুলো সঠিক (যেমন: buyer_name না হলে buyer দিন)
+        # ১. master_data টেবিল থেকে ড্রপডাউন লিস্ট তৈরি (আপনার html কলাম অনুযায়ী)
         cur.execute("""
             SELECT DISTINCT 
-                buyer_name || ' / ' || style_name || ' / ' || color || ' / ' || item_name 
+                buyer || ' / ' || style || ' / ' || color || ' / ' || item 
             FROM master_data 
+            WHERE is_active=1
             ORDER BY 1
         """)
-        style_list = [row[0] for row in cur.fetchall()]
+        # RealDictCursor ব্যবহারের কারণে row-কে dict হিসেবে হ্যান্ডেল করা
+        rows = cur.fetchall()
+        style_list = [list(row.values())[0] for row in rows]
         
         if selected_info:
             parts = selected_info.split(' / ')
             if len(parts) == 4:
-                buyer, style, color, item = parts
+                b, s, c, i = parts
                 
-                # কিউমুলেটিভ টোটাল (SUM) বের করার কুয়েরি
+                # ২. production_entries টেবিল থেকে প্রসেস অনুযায়ী কিউমুলেটিভ টোটাল
+                # এখানে আপনার production_entries টেবিলের কলাম নাম অনুযায়ী ফিল্টার করা হয়েছে
                 cur.execute("""
                     SELECT section, process_name, SUM(production_qty)
                     FROM production_entries 
-                    WHERE buyer_name = %s AND style_name = %s AND color = %s AND item_name = %s
+                    WHERE buyer_name = %s AND style_name = %s AND color_name = %s AND item_name = %s
                     GROUP BY section, process_name
                     ORDER BY section, process_name
-                """, (buyer, style, color, item))
-                details_data = cur.fetchall()
+                """, (b, s, c, i))
+                
+                res = cur.fetchall()
+                # ডাটাবেস রো-কে লিস্ট আকারে রূপান্তর যেন টেম্পলেটে row[0], row[1] কাজ করে
+                details_data = [list(row.values()) for row in res]
                 
     except Exception as e:
-        print(f"Error logic: {e}")
-        # যদি buyer_name কলাম না পায়, তবে এখানে প্রিন্ট হবে
+        print(f"Database Error in details: {e}")
         
     cur.close()
     conn.close()
