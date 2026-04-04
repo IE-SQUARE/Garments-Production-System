@@ -1,24 +1,28 @@
 {% extends "base.html" %}
 {% block content %}
 <div style="padding: 20px;">
-    <h2 style="color: #184d78;">Style Details</h2>
+    <h2 style="color: #184d78;">Style Production Search</h2>
     
     <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 25px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border: 1px solid #ddd;">
-        <form method="GET" action="/style_details" style="display: flex; gap: 15px; align-items: flex-end;">
-            <div style="flex: 1;">
-                <label style="display: block; font-size: 14px; margin-bottom: 8px; font-weight: bold; color: #333;">Select Style Details (Buyer / Style / Color / Item)</label>
-                <select name="style_info" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; background-color: #fff;">
-                    <option value="">-- Search and Select --</option>
+        <form method="GET" action="/style_details">
+            <label style="display: block; font-size: 14px; margin-bottom: 8px; font-weight: bold; color: #333;">Search Style (Buyer / Style / Color / Item)</label>
+            
+            <div style="display: flex; gap: 10px;">
+                <input list="style_options" name="style_info" id="style_search" 
+                       placeholder="Type to search..." 
+                       value="{{ selected_info or '' }}"
+                       style="flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px;">
+                
+                <datalist id="style_options">
                     {% for info in style_list %}
-                    <option value="{{ info }}" {% if selected_info == info %}selected{% endif %}>
-                        {{ info }}
-                    </option>
+                    <option value="{{ info }}">
                     {% endfor %}
-                </select>
+                </datalist>
+
+                <button type="submit" style="background: #184d78; color: white; border: none; padding: 10px 30px; border-radius: 4px; cursor: pointer; font-weight: bold;">
+                    Search Details
+                </button>
             </div>
-            <button type="submit" style="background: #184d78; color: white; border: none; padding: 11px 30px; border-radius: 4px; cursor: pointer; font-weight: bold; transition: 0.3s;">
-                Search
-            </button>
         </form>
     </div>
 
@@ -26,10 +30,10 @@
         <table style="width: 100%; border-collapse: collapse;">
             <thead>
                 <tr style="background: #184d78; color: white; text-align: left;">
-                    <th style="padding: 12px; border: 1px solid #ddd;">SL No.</th>
+                    <th style="padding: 12px; border: 1px solid #ddd;">SL</th>
                     <th style="padding: 12px; border: 1px solid #ddd;">Section</th>
                     <th style="padding: 12px; border: 1px solid #ddd;">Process Name</th>
-                    <th style="padding: 12px; border: 1px solid #ddd;">Production Qty</th>
+                    <th style="padding: 12px; border: 1px solid #ddd;">Cumulative Total (Pcs)</th>
                 </tr>
             </thead>
             <tbody>
@@ -38,13 +42,11 @@
                     <td style="padding: 12px; border: 1px solid #ddd; text-align: center;">{{ loop.index }}</td>
                     <td style="padding: 12px; border: 1px solid #ddd;">{{ row[0] }}</td>
                     <td style="padding: 12px; border: 1px solid #ddd;">{{ row[1] }}</td>
-                    <td style="padding: 12px; border: 1px solid #ddd; font-weight: bold; color: #184d78; text-align: right;">{{ row[2] }}</td>
+                    <td style="padding: 12px; border: 1px solid #ddd; font-weight: bold; color: #184d78; text-align: right;">{{ "{:,}".format(row[2]|int) }}</td>
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="4" style="text-align: center; padding: 30px; color: #888; font-style: italic;">
-                        Please select a Style from the list to see the production details.
-                    </td>
+                    <td colspan="4" style="text-align: center; padding: 30px; color: #888;">Select a style to see production report.</td>
                 </tr>
                 {% endfor %}
             </tbody>
