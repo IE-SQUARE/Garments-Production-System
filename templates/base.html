@@ -96,14 +96,41 @@ background:#eef1f5;
     cursor: pointer;
 }
 
+/* সাইডবারের নতুন এবং সুন্দর ডিজাইন */
 .sidebar {
     position: fixed;
-    top: 60px; /* টপবার বড় করায় সাইডবারকে ৬০ পিক্সেল নিচে নামানো হয়েছে */
+    top: 60px;
     left: 0;
     width: 220px;
-    height: 100vh;
-    background: #f7f8fb;
-    border-right: 1px solid #ddd;
+    height: calc(100vh - 60px);
+    background: #2c3e50; /* গাঢ় সুন্দর কালার */
+    padding-top: 20px;
+    display: flex;
+    flex-direction: column; /* মেনুগুলো ওপর-নিচ করার জন্য */
+    box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+}
+
+.sidebar a {
+    padding: 12px 20px;
+    text-decoration: none;
+    font-size: 15px;
+    color: #ecf0f1;
+    display: block; /* প্রতিটি লিংক আলাদা লাইন নিবে */
+    transition: 0.3s;
+    border-bottom: 1px solid #34495e;
+}
+
+.sidebar a:hover {
+    background: #34495e;
+    color: #3498db;
+    padding-left: 30px; /* মাউস নিলে একটু সরে যাবে */
+}
+
+/* কন্টেন্ট এরিয়া ঠিক করার জন্য */
+.content {
+    margin-left: 230px; /* সাইডবারের জায়গাটুকু বাদ দিয়ে কন্টেন্ট শুরু হবে */
+    padding: 20px;
+    margin-top: 70px;
 }
 
 </style>
