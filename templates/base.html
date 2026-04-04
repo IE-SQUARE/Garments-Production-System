@@ -88,25 +88,27 @@ background:#eef1f5;
     top: 60px;
     left: 0;
     width: 220px;
-    height: calc(100vh - 60px);
-    background-color: #ffffff !important; /* টপবারের সাথে ম্যাচিং নীল */
-    padding-top: 10px;
+    /* হাইট স্ক্রিনের শেষ পর্যন্ত নিশ্চিত করার জন্য */
+    height: calc(100vh - 60px) !important; 
+    background-color: #f4f4f4 !important; /* হালকা ধূসর কালার */
     display: flex;
     flex-direction: column;
+    padding-top: 10px;
     z-index: 1000;
-    border-right: 1px solid rgba(255, 255, 255, 0.1);
+    border-right: 1px solid #ddd;
+    overflow-y: auto; /* মেনু বেশি হলে যেন স্ক্রল করা যায় */
 }
 
 .sidebar a {
     padding: 15px 20px;
     text-decoration: none;
     font-size: 15px;
-    color: #010203 !important; /* লেখার রঙ একদম সাদা নিশ্চিত করবে */
+    color: #333333 !important; /* গাঢ় ধূসর লেখা যেন দেখা যায় */
     display: block;
     font-weight: bold;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    border-bottom: 1px solid #e0e0e0;
+    transition: 0.3s;
 }
-
 .sidebar a:hover {
     background-color: #1a5a8c !important; /* মাউস নিলে সামান্য রঙ পরিবর্তন */
     color: #ffffff !important;
