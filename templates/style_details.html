@@ -2,26 +2,27 @@
 {% block content %}
 
 <div style="padding: 20px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+    
     <h2 style="color: #184d78; margin-bottom: 20px; border-bottom: 2px solid #184d78; padding-bottom: 10px;">
         <i class="fas fa-chart-line"></i> Style Wise Summary
     </h2>
     
     <div style="background: #ffffff; padding: 20px; border-radius: 8px; margin-bottom: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #e0e0e0;">
-        <form method="GET" action="/style_details" id="searchForm">
+        <form method="GET" action="/style_details">
             <div style="display: flex; flex-direction: column; gap: 8px;">
                 <label style="font-size: 13px; font-weight: 600; color: #555;">
                     Search Style (Buyer / Style / Color / Item)
                 </label>
                 
-                <div style="display: flex; gap: 0; overflow: hidden; border-radius: 4px; border: 1px solid #ccc; max-width: 600px;">
+                <div style="display: flex; align-items: center; gap: 5px; width: fit-content;">
                     
                     <input list="style_options" 
                            name="style_info" 
                            id="style_search" 
                            placeholder="Type to search..." 
-                           value=""
+                           value="" 
                            autocomplete="off"
-                           style="width: 30px; height: 36px; padding: 0 12px; border: none; font-size: 14px; outline: none; border-right: 1px solid #ccc;">
+                           style="width: 350px; height: 36px; padding: 0 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; outline: none;">
                     
                     <datalist id="style_options">
                         {% for info in style_list %}
@@ -29,7 +30,7 @@
                         {% endfor %}
                     </datalist>
 
-                    <button type="submit" style="height: 36px; background: #184d78; color: white; border: none; padding: 0 20px; cursor: pointer; font-weight: bold; font-size: 13px; transition: background 0.3s; white-space: nowrap;">
+                    <button type="submit" style="height: 36px; background: #184d78; color: white; border: none; border-radius: 4px; padding: 0 20px; cursor: pointer; font-weight: bold; font-size: 13px; white-space: nowrap; display: flex; align-items: center; justify-content: center;">
                         Search Details
                     </button>
                 </div>
@@ -67,7 +68,7 @@
                 {% else %}
                 <tr>
                     <td colspan="4" style="text-align: center; padding: 30px; color: #999; font-style: italic;">
-                        Select a style to see summary.
+                        Select a style from the list to view summary.
                     </td>
                 </tr>
                 {% endfor %}
