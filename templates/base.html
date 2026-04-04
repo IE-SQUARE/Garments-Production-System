@@ -66,14 +66,15 @@ font-family:Arial;
 background:#eef1f5;
 }
 
-/* এই অংশটুকু খুঁজে বের করে নিচেরটা দিয়ে বদলে দিন */
+/* টপবার এবং সাইডবার দুটোর জন্যই একই নীল রং (#184d78) */
+
 .topbar {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
-    height: 60px; /* লোগো সুন্দরভাবে দেখানোর জন্য ৪৫ থেকে ৬০ করা হয়েছে */
-    background: #184d78;
+    height: 60px;
+    background: #184d78; /* আপনার পছন্দের নীল রং */
     color: white;
     display: flex;
     align-items: center;
@@ -83,30 +84,16 @@ background:#eef1f5;
     z-index: 1000;
 }
 
-.logo {
-    height: 40px; /* সাইজ সামান্য ছোট করা হলো */
-    width: auto;
-    display: block;
-    margin-top: 2px; /* সামান্য নিচে নামানোর জন্য */
-}
-
-.logout-icon {
-    height: 25px; /* আইকনের সাইজ ঠিক করা হয়েছে */
-    width: auto;
-    cursor: pointer;
-}
-
-/* সাইডবারের নতুন এবং সুন্দর ডিজাইন */
 .sidebar {
     position: fixed;
     top: 60px;
     left: 0;
     width: 220px;
     height: calc(100vh - 60px);
-    background: #184d78 /* গাঢ় সুন্দর কালার */
+    background: #184d78; /* টপবারের সাথে ম্যাচ করে এই রংটি দেওয়া হলো */
     padding-top: 20px;
     display: flex;
-    flex-direction: column; /* মেনুগুলো ওপর-নিচ করার জন্য */
+    flex-direction: column;
     box-shadow: 2px 0 5px rgba(0,0,0,0.1);
 }
 
@@ -114,9 +101,8 @@ background:#eef1f5;
     padding: 12px 20px;
     text-decoration: none;
     font-size: 15px;
-    color: #184d78 /* গাঢ় সুন্দর কালার */
-    display: block; /* প্রতিটি লিংক আলাদা লাইন নিবে */
-    transition: 0.3s;
+    color: #ffffff; /* লেখা সাদা দেখানোর জন্য */
+    display: block;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1); /* হালকা বর্ডার */
 }
 
@@ -124,7 +110,6 @@ background:#eef1f5;
     background: rgba(255, 255, 255, 0.1); /* মাউস নিলে হালকা উজ্জ্বল হবে */
     color: #3498db;
 }
-
 /* কন্টেন্ট এরিয়া ঠিক করার জন্য */
 .content {
     margin-left: 230px; /* সাইডবারের জায়গাটুকু বাদ দিয়ে কন্টেন্ট শুরু হবে */
