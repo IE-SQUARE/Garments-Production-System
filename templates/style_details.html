@@ -1,56 +1,82 @@
 {% extends "base.html" %}
 {% block content %}
-<div style="padding: 20px;">
-    <h2 style="color: #184d78;">Style Production Search</h2>
-    
-    <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 25px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); border: 1px solid #ddd;">
-        <form method="GET" action="/style_details">
-            <label style="display: block; font-size: 14px; margin-bottom: 8px; font-weight: bold; color: #333;">Search Style (Buyer / Style / Color / Item)</label>
-            
-            <div style="display: flex; gap: 10px;">
-                <input list="style_options" name="style_info" id="style_search" 
-                       placeholder="Type to search..." 
-                       value="{{ selected_info or '' }}"
-                       style="flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px;">
-                
-                <datalist id="style_options">
-                    {% for info in style_list %}
-                    <option value="{{ info }}">
-                    {% endfor %}
-                </datalist>
 
-                <button type="submit" style="background: #184d78; color: white; border: none; padding: 10px 30px; border-radius: 4px; cursor: pointer; font-weight: bold;">
-                    Search Details
-                </button>
+<div style="padding: 20px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+    <h2 style="color: #184d78; margin-bottom: 20px; border-bottom: 2px solid #184d78; padding-bottom: 10px;">
+        <i class="fas fa-search-plus"></i> Style Production Details
+    </h2>
+    
+    <div style="background: #ffffff; padding: 25px; border-radius: 12px; margin-bottom: 30px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border: 1px solid #e0e0e0;">
+        <form method="GET" action="/style_details">
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <label style="font-size: 15px; font-weight: 600; color: #444;">
+                    Search and Select Style (Buyer / Style / Color / Item)
+                </label>
+                
+                <div style="display: flex; gap: 10px;">
+                    <input list="style_options" 
+                           name="style_info" 
+                           id="style_search" 
+                           placeholder="টাইপ করুন (যেমন: বায়ার বা স্টাইলের নাম)..." 
+                           value="{{ selected_info or '' }}"
+                           autocomplete="off"
+                           style="flex: 1; padding: 12px 15px; border: 2px solid #ddd; border-radius: 6px; font-size: 15px; transition: border-color 0.3s;">
+                    
+                    <datalist id="style_options">
+                        {% for info in style_list %}
+                        <option value="{{ info }}">
+                        {% endfor %}
+                    </datalist>
+
+                    <button type="submit" style="background: #184d78; color: white; border: none; padding: 0 35px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 16px; transition: background 0.3s;">
+                        Search
+                    </button>
+                </div>
+                <small style="color: #888;">* টাইপ করা শুরু করলে আপনার আপলোড করা স্টাইলগুলো নিচে দেখাবে।</small>
             </div>
         </form>
     </div>
 
-    <div style="background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 1px solid #ddd;">
-        <table style="width: 100%; border-collapse: collapse;">
+    <div style="background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.05); border: 1px solid #ddd;">
+        <table style="width: 100%; border-collapse: collapse; min-width: 600px;">
             <thead>
                 <tr style="background: #184d78; color: white; text-align: left;">
-                    <th style="padding: 12px; border: 1px solid #ddd;">SL</th>
-                    <th style="padding: 12px; border: 1px solid #ddd;">Section</th>
-                    <th style="padding: 12px; border: 1px solid #ddd;">Process Name</th>
-                    <th style="padding: 12px; border: 1px solid #ddd;">Cumulative Total (Pcs)</th>
+                    <th style="padding: 15px; border: 1px solid #eee; width: 60px; text-align: center;">SL</th>
+                    <th style="padding: 15px; border: 1px solid #eee;">Section</th>
+                    <th style="padding: 15px; border: 1px solid #eee;">Process Name</th>
+                    <th style="padding: 15px; border: 1px solid #eee; text-align: right;">Cumulative Total (Pcs)</th>
                 </tr>
             </thead>
             <tbody>
                 {% for row in details_data %}
-                <tr>
-                    <td style="padding: 12px; border: 1px solid #ddd; text-align: center;">{{ loop.index }}</td>
-                    <td style="padding: 12px; border: 1px solid #ddd;">{{ row[0] }}</td>
-                    <td style="padding: 12px; border: 1px solid #ddd;">{{ row[1] }}</td>
-                    <td style="padding: 12px; border: 1px solid #ddd; font-weight: bold; color: #184d78; text-align: right;">{{ "{:,}".format(row[2]|int) }}</td>
+                <tr style="border-bottom: 1px solid #eee; transition: background 0.2s;" onmouseover="this.style.background='#f9fbfd'" onmouseout="this.style.background='transparent'">
+                    <td style="padding: 12px; border: 1px solid #eee; text-align: center; color: #666;">{{ loop.index }}</td>
+                    <td style="padding: 12px; border: 1px solid #eee; font-weight: 500;">{{ row[0] }}</td>
+                    <td style="padding: 12px; border: 1px solid #eee;">{{ row[1] }}</td>
+                    <td style="padding: 12px; border: 1px solid #eee; font-weight: bold; color: #184d78; text-align: right; font-size: 16px;">
+                        {{ "{:,}".format(row[2]|int) }}
+                    </td>
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="4" style="text-align: center; padding: 30px; color: #888;">Select a style to see production report.</td>
+                    <td colspan="4" style="text-align: center; padding: 40px; color: #999; font-style: italic; background: #fafafa;">
+                        <div style="margin-bottom: 10px; font-size: 24px;">🔍</div>
+                        No data found. Please search by selecting a style from the list.
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
 </div>
+
+<script>
+    document.getElementById('style_search').addEventListener('focus', function() {
+        this.style.borderColor = '#184d78';
+    });
+    document.getElementById('style_search').addEventListener('blur', function() {
+        this.style.borderColor = '#ddd';
+    });
+</script>
+
 {% endblock %}
