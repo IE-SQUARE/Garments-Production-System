@@ -1079,23 +1079,24 @@ def style_details():
     details_data = []
     
     try:
-        # Style Update পেজ থেকে সব ডাটা ড্রপডাউনে নিয়ে আসা
+        # ১. ড্রপডাউনের জন্য master_data থেকে ডাটা আনা
         cur.execute("""
             SELECT DISTINCT 
                 buyer || ' / ' || style || ' / ' || color || ' / ' || item AS label
             FROM master_data 
             WHERE is_active=1
-            ORDER BY buyer, style
+            ORDER BY 1
         """)
         rows = cur.fetchall()
-        style_list = [r['label'] for r in rows]
+        # RealDictCursor এর জন্য row['label'] ব্যবহার করতে হবে
+        style_list = [row['label'] for row in rows]
         
         if selected_info:
             parts = selected_info.split(' / ')
             if len(parts) == 4:
                 b, s, c, i = parts
                 
-                # প্রসেস অনুযায়ী কিউমুলেটিভ টোটাল (সব এন্ট্রির যোগফল)
+                # ২. কিউমুলেটিভ টোটাল কুয়েরি
                 cur.execute("""
                     SELECT section, process_name, SUM(production_qty) as total
                     FROM production_entries 
@@ -1105,6 +1106,7 @@ def style_details():
                 """, (b, s, c, i))
                 
                 res = cur.fetchall()
+                # HTML এ row[0], row[1] ভাবে দেখানোর জন্য ডাটা ফরম্যাট করা
                 details_data = [[r['section'], r['process_name'], r['total']] for r in res]
                 
     except Exception as e:
