@@ -1071,6 +1071,7 @@ def bulk_import_buyer():
 @app.route('/style_details')
 @login_required
 def style_details():
+    # ড্রপডাউন থেকে সিলেক্ট করা ভ্যালু নেওয়া
     selected_info = request.args.get('style_info', '').strip()
     conn = db()
     cur = conn.cursor()
@@ -1079,39 +1080,40 @@ def style_details():
     details_data = []
     
     try:
-        # ১. master_data টেবিল থেকে ড্রপডাউন লিস্ট তৈরি (আপনার html কলাম অনুযায়ী)
+        # ১. ড্রপডাউনের জন্য master_data থেকে ডাটা আনা (Buyer/Style/Color/Item)
+        # Style Update পেজে যা আপলোড করবেন তা এখানে অটো চলে আসবে
         cur.execute("""
             SELECT DISTINCT 
-                buyer || ' / ' || style || ' / ' || color || ' / ' || item 
+                buyer || ' / ' || style || ' / ' || color || ' / ' || item AS info
             FROM master_data 
             WHERE is_active=1
             ORDER BY 1
         """)
-        # RealDictCursor ব্যবহারের কারণে row-কে dict হিসেবে হ্যান্ডেল করা
-        rows = cur.fetchall()
-        style_list = [list(row.values())[0] for row in rows]
+        # RealDictCursor ব্যবহারের কারণে row['info'] হিসেবে লিস্ট তৈরি
+        style_list = [row['info'] for row in cur.fetchall()]
         
         if selected_info:
+            # সিলেক্ট করা টেক্সটকে ভেঙে আলাদা করা
             parts = selected_info.split(' / ')
             if len(parts) == 4:
                 b, s, c, i = parts
                 
-                # ২. production_entries টেবিল থেকে প্রসেস অনুযায়ী কিউমুলেটিভ টোটাল
-                # এখানে আপনার production_entries টেবিলের কলাম নাম অনুযায়ী ফিল্টার করা হয়েছে
+                # ২. কিউমুলেটিভ টোটাল বের করার কুয়েরি (প্রসেস অনুযায়ী যোগফল)
+                # production_entries টেবিলের কলাম নাম অনুযায়ী ফিল্টার করা হয়েছে
                 cur.execute("""
-                    SELECT section, process_name, SUM(production_qty)
+                    SELECT section, process_name, SUM(production_qty) as total_qty
                     FROM production_entries 
                     WHERE buyer_name = %s AND style_name = %s AND color_name = %s AND item_name = %s
                     GROUP BY section, process_name
                     ORDER BY section, process_name
                 """, (b, s, c, i))
                 
+                # ডাটাবেস রো-কে লিস্টে রূপান্তর করা যেন HTML এ row[0], row[1] কাজ করে
                 res = cur.fetchall()
-                # ডাটাবেস রো-কে লিস্ট আকারে রূপান্তর যেন টেম্পলেটে row[0], row[1] কাজ করে
-                details_data = [list(row.values()) for row in res]
+                details_data = [[r['section'], r['process_name'], r['total_qty']] for r in res]
                 
     except Exception as e:
-        print(f"Database Error in details: {e}")
+        print(f"Database Error: {e}")
         
     cur.close()
     conn.close()
