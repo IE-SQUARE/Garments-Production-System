@@ -152,7 +152,7 @@ padding:30px;
 
 <div class="top-left">
 
-<img src="/static/logo.png" class="logo">
+<img src="{{ url_for('static', filename='logo.png') }}" class="logo">
 
 <span class="company-name">
 SQUARE DENIMS LIMITED
@@ -165,7 +165,7 @@ SQUARE DENIMS LIMITED
 <span class="user-name">{{name}}</span>
 
 <a href="/logout" class="logout-btn">
-<img src="/static/logout.png" class="logout-icon">
+<img src="{{ url_for('static', filename='logout.png') }}" class="logout-icon">
 </a>
 
 </div>
