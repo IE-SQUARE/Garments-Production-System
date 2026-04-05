@@ -1,39 +1,119 @@
-<div class="sidebar">
-    <a href="/dashboard">Home</a>
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Production System</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        body { margin: 0; font-family: Arial, sans-serif; background: #eef1f5; }
+        
+        /* টপবার */
+        .topbar {
+            position: fixed; top: 0; left: 0; width: 100%; height: 60px;
+            background-color: #184d78; color: white;
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 25px; box-sizing: border-box; z-index: 1001;
+        }
 
-    {% if role == "admin" %}
-    <a href="#" onclick="toggleAdmin()" style="background: #e0e0e0; color: #184d78 !important;">Admin Panel ▾</a>
-    <div id="adminMenu" style="display:none; background: #f9f9f9;">
-        <a href="/user_access" style="padding-left:40px;">User Access</a>
-        <a href="/users" style="padding-left:40px;">User Management</a>
-        <a href="/operators" style="padding-left:40px;">Operator Management</a>
-        <a href="/shifts" style="padding-left:40px;">Shift Management</a>
+        /* সাইডবার */
+        .sidebar {
+            position: fixed; top: 60px; left: 0; width: 230px;
+            height: calc(100vh - 60px); background-color: #f4f4f4;
+            display: flex; flex-direction: column;
+            border-right: 1px solid #ddd; overflow-y: auto; z-index: 1000;
+        }
+
+        .sidebar a {
+            padding: 15px 20px; text-decoration: none; font-size: 14px;
+            color: #333; font-weight: bold; border-bottom: 1px solid #e0e0e0;
+            transition: 0.3s; cursor: pointer;
+        }
+
+        .sidebar a:hover { background-color: #1a5a8c; color: white; }
+
+        /* ড্রপডাউন মেনু স্টাইল */
+        .submenu { display: none; background: #e9e9e9; }
+        .submenu a { padding-left: 40px; font-weight: normal; font-size: 13px; }
+
+        /* কন্টেন্ট এরিয়া */
+        .content {
+            margin-left: 230px; margin-top: 60px; padding: 30px;
+            min-height: 100vh; box-sizing: border-box;
+        }
+
+        .logo { height: 40px; margin-right: 10px; vertical-align: middle; }
+        .company-name { font-size: 18px; font-weight: bold; }
+        .logout-btn img { height: 25px; }
+    </style>
+</head>
+<body>
+
+<div class="topbar">
+    <div class="top-left">
+        <img src="{{ url_for('static', filename='logo.png') }}" class="logo">
+        <span class="company-name">SQUARE DENIMS LIMITED</span>
     </div>
-    {% endif %}
+    <div class="top-right">
+        <span style="margin-right:15px;">{{name}} ({{role}})</span>
+        <a href="/logout" class="logout-btn">
+            <img src="{{ url_for('static', filename='logout.png') }}" alt="Logout">
+        </a>
+    </div>
+</div>
+
+<div class="sidebar">
+    <a href="/dashboard">🏠 Home</a>
 
     {% if role == "admin" or 'Production' in session.get('permissions', []) %}
-        <a href="/entry">Data Entry</a>
+        <a href="/entry">📝 Data Entry</a>
     {% endif %}
 
     {% if role == "admin" or 'Batch Creation' in session.get('permissions', []) %}
-        <a href="/create_batch">Batch Creation</a>
+        <a href="/create_batch">📦 Batch Creation</a>
     {% endif %}
 
     {% if role == "admin" or 'Style Summary' in session.get('permissions', []) %}
-        <a href="/style_details">Style Details</a>
+        <a href="/style_details">📊 Style Details</a>
     {% endif %}
 
     {% if role == "admin" or 'Operator Management' in session.get('permissions', []) %}
-        <a href="/master_data">Style Update</a>
+        <a href="/master_data">⚙️ Style Update</a>
     {% endif %}
 
     {% if role == "admin" or 'Reports' in session.get('permissions', []) %}
-    <a href="#" onclick="toggleDry()" style="background: #e0e0e0; color: #184d78 !important;">Dry Process Report ▾</a>
-    <div id="dryMenu" style="display:none; background: #f9f9f9;">
-        <a href="/report" style="padding-left:40px;">Date Wise Report</a>
-        <a href="/operator_status" style="padding-left:40px;">Operator Status</a>
+    <a onclick="toggleMenu('dryMenu')">📉 Dry Process Report ▾</a>
+    <div id="dryMenu" class="submenu">
+        <a href="/report">Date Wise Report</a>
+        <a href="/operator_status">Operator Status</a>
     </div>
     {% endif %}
 
-    <a href="/logout" style="color: #d9534f !important;">Logout</a>
+    {% if role == "admin" %}
+    <a onclick="toggleMenu('adminMenu')" style="background:#ddd;">🛠️ Admin Panel ▾</a>
+    <div id="adminMenu" class="submenu">
+        <a href="/user_access">User Access Control</a>
+        <a href="/users">User Management</a>
+        <a href="/operators">Operator Management</a>
+        <a href="/shifts">Shift Management</a>
+    </div>
+    {% endif %}
+
+    <a href="/logout" style="color: red;">🚪 Logout</a>
 </div>
+
+<div class="content">
+    {% block content %}{% endblock %}
+</div>
+
+<script>
+function toggleMenu(menuId) {
+    var menu = document.getElementById(menuId);
+    if (menu.style.display === "block") {
+        menu.style.display = "none";
+    } else {
+        menu.style.display = "block";
+    }
+}
+</script>
+
+</body>
+</html>
