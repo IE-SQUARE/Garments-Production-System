@@ -3,114 +3,130 @@
 {% block content %}
 
 <style>
+    .report-table {
+        border-collapse: collapse;
+        width: 100%;
+        background: #ffffff;
+    }
 
-.report-table{
-border-collapse:collapse;
-width:100%;
-background:white;
-}
+    .report-table th,
+    .report-table td {
+        border: 1px solid #dddddd;
+        padding: 10px;
+        text-align: center;
+        font-size: 14px;
+    }
 
-.report-table th,
-.report-table td{
-border:1px solid #ccc;
-padding:8px;
-text-align:center;
-}
+    .report-table th {
+        background: #f8f9fa;
+        font-weight: bold;
+        color: #333333;
+    }
 
-.report-table th{
-background:#f2f2f2;
-font-weight:bold;
-}
+    .filter-container {
+        margin-bottom: 25px;
+        padding: 15px;
+        background: #f1f3f5;
+        border-radius: 6px;
+    }
 
+    .export-btn {
+        padding: 8px 16px;
+        background-color: #007bff;
+        color: #ffffff;
+        border: none;
+        border-radius: 4px;
+        margin-left: 10px;
+        cursor: pointer;
+        font-weight: 500;
+    }
+
+    .export-btn:hover {
+        background-color: #0056b3;
+    }
 </style>
 
-<h2>Production Report</h2>
+<h2 style="margin-bottom: 20px;">Production Performance Report</h2>
 
-<form method="get" style="margin-bottom:20px;">
+<div class="filter-container">
+    <form method="get">
+        <label>Start Date:</label>
+        <input type="date" name="from_date" value="{{ from_date }}">
+        
+        <label style="margin-left: 10px;">End Date:</label>
+        <input type="date" name="to_date" value="{{ to_date }}"> 
 
-<label>From</label>
-<input type="date" name="from_date" value="{{ from_date }}">
-<label>To</label>
-<input type="date" name="to_date" value="{{ to_date }}"> 
-<label>Section</label>
-<select name="section" style="width:160px;">
+        <label style="margin-left: 10px;">Section:</label>
+        <select name="section" style="padding: 4px;">
+            <option value="">All Sections</option>
+            {% for s in sections %}
+            <option value="{{ s.section }}" {% if section == s.section %}selected{% endif %}>
+                {{ s.section }}
+            </option>
+            {% endfor %}
+        </select>
 
-<option value="">All</option>
+        <button type="submit" style="padding: 5px 15px; margin-left: 10px; cursor: pointer;">Generate Report</button>
 
-{% for s in sections %}
-<option value="{{ s.section }}"
-{% if section == s.section %}selected{% endif %}>
-{{ s.section }}
-</option>
-{% endfor %}
-</select>
-<button type="submit">Submit</button>
-
-<button id="exportButton" type="button" style="padding: 8px 14px; background: #2b7cff; color: white; border: none; border-radius: 4px; margin-left: 10px; cursor: pointer; font-family: inherit; font-size: 14px;">
-    Export to Excel
-</button>
-
-</form>
+        <button id="exportButton" type="button" class="export-btn">
+            Export to Excel
+        </button>
+    </form>
+</div>
 
 <table class="report-table">
-
-<tr>
-
-<th>SL No.</th>
-<th>Buyer</th>
-<th>Style</th>
-<th>Color</th>
-<th>Process Name</th>
-<th>Day</th>
-<th>Night</th>
-<th>Total</th>
-<th>Cum. Total</th>
-
-</tr>
-
-{% set cum_total = 0 %}
-
-{% for r in rows %}
-
-{% set cum_total = cum_total + r.total_qty %}
-
-<tr>
-
-<td>{{ loop.index }}</td>
-<td>{{ r.buyer_name }}</td>
-<td>{{ r.style_name }}</td>
-<td>{{ r.color_name }}</td>
-<td>{{ r.process_name }}</td>
-<td>{{ r.day_qty }}</td>
-<td>{{ r.night_qty }}</td>
-<td>{{ r.total_qty }}</td>
-<td>{{ cum_total }}</td>
-
-</tr>
-
-{% endfor %}
-
+    <thead>
+        <tr>
+            <th>Serial No.</th>
+            <th>Buyer Name</th>
+            <th>Style Identification</th>
+            <th>Color</th>
+            <th>Process Name</th>
+            <th>Day Shift Qty</th>
+            <th>Night Shift Qty</th>
+            <th>Daily Total</th>
+            <th>Cumulative Total</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for r in rows %}
+        <tr>
+            <td>{{ loop.index }}</td>
+            <td>{{ r.buyer_name }}</td>
+            <td>{{ r.style_name }}</td>
+            <td>{{ r.color_name }}</td>
+            <td>{{ r.process_name }}</td>
+            <td>{{ r.day_qty }}</td>
+            <td>{{ r.night_qty }}</td>
+            <td style="font-weight: bold;">{{ r.total_qty }}</td>
+            <td style="font-weight: bold; color: #1a73e8;">{{ r.cum_total }}</td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="9">No records found matching the specified criteria.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
 </table>
 
 <script>
 document.getElementById('exportButton').onclick = function() {
-    let table = document.querySelector(".report-table"); // আপনার টেবিল ক্লাস
+    const table = document.querySelector(".report-table"); 
     if (!table || table.rows.length <= 1) {
-        alert("টেবিলে কোনো ডাটা নেই!");
+        alert("No data available for export.");
         return;
     }
 
-    let rows = Array.from(table.rows);
-    let headers = Array.from(rows[0].cells).map(cell => cell.innerText);
-    let reportData = rows.slice(1).map(row => {
-        let obj = {};
-        Array.from(row.cells).forEach((cell, i) => {
-            obj[headers[i]] = cell.innerText;
+    const rows = Array.from(table.rows);
+    const headers = Array.from(rows[0].cells).map(cell => cell.innerText);
+    const reportData = rows.slice(1).map(row => {
+        let rowObject = {};
+        Array.from(row.cells).forEach((cell, index) => {
+            rowObject[headers[index]] = cell.innerText;
         });
-        return obj;
+        return rowObject;
     });
 
-    // এখানে অবশ্যই /export_excel দিতে হবে, /export_report নয়
     fetch('/export_excel', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -118,16 +134,16 @@ document.getElementById('exportButton').onclick = function() {
     })
     .then(response => {
         if (response.ok) return response.blob();
-        throw new Error('Export failed');
+        throw new Error('Export process failed.');
     })
     .then(blob => {
-        let url = window.URL.createObjectURL(blob);
-        let a = document.createElement('a');
-        a.href = url;
-        a.download = 'Production_Report.xlsx';
-        a.click();
+        const downloadUrl = window.URL.createObjectURL(blob);
+        const anchorElement = document.createElement('a');
+        anchorElement.href = downloadUrl;
+        anchorElement.download = 'Production_Report_Data.xlsx';
+        anchorElement.click();
     })
-    .catch(err => alert("Error: " + err.message));
+    .catch(error => alert("System Error: " + error.message));
 };
 </script>
 
