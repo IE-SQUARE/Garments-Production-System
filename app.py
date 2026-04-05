@@ -29,7 +29,42 @@ def db():
     DATABASE_URL = os.environ.get('DATABASE_URL')
     return psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
 
+import pytz # ফাইলের একদম ওপরে ইম্পোর্ট সেকশনে এটি যোগ করবেন
 
+# =========================
+# PRODUCTION INFO (SHIFT & AUTO HOUR)
+# =========================
+
+def get_production_info():
+    # বাংলাদেশ টাইমজোন সেট করা (Render সার্ভারের টাইম ফিক্স করার জন্য)
+    tz = pytz.timezone('Asia/Dhaka')
+    now = datetime.now(tz)
+    
+    current_hour = now.hour  # ২৪ ঘণ্টার ফরম্যাট (০-২৩)
+
+    # শিফট এবং আওয়ার ক্যালকুলেশন লজিক (সকাল ০৭:০০ থেকে শুরু)
+    if 7 <= current_hour < 19:
+        shift = "Day"
+        # সকাল ৭টা হলো ১ম ঘণ্টা (৭-৬=১)
+        prod_hour = current_hour - 6 
+    else:
+        shift = "Night"
+        # রাত ৭টা (১৯:০০) হলো ১ম ঘণ্টা (১৯-১৮=১)
+        if current_hour >= 19:
+            prod_hour = current_hour - 18
+        else:
+            # রাত ১২টার পরের সময়ের জন্য (০, ১, ২...)
+            # রাত ১২টা হলো ৬ষ্ঠ ঘণ্টা (০+৬=৬)
+            prod_hour = current_hour + 6
+
+    # ডাটাবেসে সেভ করার জন্য আওয়ার লেবেল
+    labels = ["1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th", "10th", "11th", "12th"]
+    
+    # ইন্ডেক্স যাতে সীমার বাইরে না যায় (Safety Check)
+    idx = max(0, min(prod_hour - 1, 11))
+    hour_label = labels[idx]
+
+    return shift, hour_label
 # =========================
 # LOGIN REQUIRED
 # =========================
@@ -129,14 +164,19 @@ def dashboard():
 # =========================
 # ENTRY PAGE
 # =========================
+# =========================
+# ENTRY PAGE
+# =========================
 @app.route("/entry", methods=["GET","POST"])
 @login_required
 def entry():
-
     conn = db()
     cur = conn.cursor()
 
-    # sections
+    # বর্তমান শিফট এবং আওয়ার ডাটা বের করা (BD Time 07:00 AM Logic)
+    auto_shift, auto_hour = get_production_info()
+
+    # Dropdown: sections
     cur.execute("""
     SELECT DISTINCT section
     FROM processes
@@ -145,16 +185,16 @@ def entry():
     """)
     sections = cur.fetchall()
 
-    # processes
+    # Dropdown: processes (Current User's Section)
     cur.execute("""
-    SELECT id,process_name
+    SELECT id, process_name
     FROM processes
     WHERE section=%s AND is_active=1
     ORDER BY process_name
-    """,(session.get("section"),))
+    """, (session.get("section"),))
     processes = cur.fetchall()
 
-    # operators
+    # Dropdown: operators
     cur.execute("""
     SELECT operator_name, operator_id
     FROM operators
@@ -163,101 +203,61 @@ def entry():
     """)
     operators = cur.fetchall()
 
-    # master data
+    # Dropdown: master data
     cur.execute("""
-    SELECT buyer,style,color,item,
+    SELECT buyer, style, color, item,
     CONCAT(buyer,' / ',style,' / ',color,' / ',item) AS label
     FROM master_data
     WHERE is_active=1
-    ORDER BY buyer,style,color,item
+    ORDER BY buyer, style, color, item
     """)
     master_rows = cur.fetchall()
 
-
     if request.method == "POST":
-
         entry_date = request.form.get("entry_date") or date.today()
         section = request.form.get("section")
         process_id = request.form.get("process_id")
+        
+        # অপারেটর ডাটা প্রসেসিং
         operator_input = request.form.get("operator_name")
-
-        parts = operator_input.split(" - ")
- 
-        operator = parts[0] if len(parts) > 0 else ""
-        emp_no = parts[1] if len(parts) > 1 else ""
+        parts_op = operator_input.split(" - ")
+        operator = parts_op[0] if len(parts_op) > 0 else ""
+        emp_no = parts_op[1] if len(parts_op) > 1 else ""
+        
+        # কোয়ান্টিটি চেকিং
         qty = request.form.get("qty")
- 
-        if not qty:
-            qty = 0
+        qty = int(qty) if qty else 0
 
-        qty = int(qty)
-
+        # মাস্টার ডাটা প্রসেসিং
         master_label = request.form.get("master_label")
-        parts = master_label.split(" / ")
+        parts_m = master_label.split(" / ")
+        buyer = parts_m[0] if len(parts_m) > 0 else ""
+        style = parts_m[1] if len(parts_m) > 1 else ""
+        color = parts_m[2] if len(parts_m) > 2 else ""
+        item = parts_m[3] if len(parts_m) > 3 else ""
 
-        buyer = parts[0] if len(parts) > 0 else ""
-        style = parts[1] if len(parts) > 1 else ""
-        color = parts[2] if len(parts) > 2 else ""
-        item = parts[3] if len(parts) > 3 else ""
-
-        # =========================
-        # AUTO HOUR DETECTION
-        # =========================
-
-        now = datetime.now()
-
-        shift_start = now.replace(hour=8, minute=0, second=0, microsecond=0)
-
-        diff = now - shift_start
-
-        hour_no = int(diff.total_seconds() // 3600) + 1
-
-        if hour_no < 1:
-            hour_no = 1
-
-        if hour_no > 11:
-            hour_no = 11
-
-        labels = ["1st","2nd","3rd","4th","5th","6th","7th","8th","9th","10th","11th"]
-        hour_label = labels[hour_no-1]
-
-        # =========================
-        # GET PROCESS NAME
-        # =========================
-
-        cur.execute("""
-        SELECT process_name
-        FROM processes
-        WHERE id=%s
-        """,(process_id,))
-        p = cur.fetchone()
-
-        if p:
-            process_name = p["process_name"]
-        else:
-            process_name = ""
+        # প্রসেস নেম তুলে আনা
+        cur.execute("SELECT process_name FROM processes WHERE id=%s", (process_id,))
+        p_row = cur.fetchone()
+        process_name = p_row["process_name"] if p_row else ""
 
         created_by = session.get("uid")
 
-        # =========================
-        # INSERT ENTRY
-        # =========================
-
+        # ডাটাবেসে ইনসার্ট (auto_hour ব্যবহার করা হয়েছে)
         cur.execute("""
-
-        INSERT INTO production_entries
-        (entry_date,hour_label,section,buyer_name,style_name,color_name,item_name,
-        process_name,operator_name,operator_id,production_qty,created_by)
-
-        VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
-        """,(entry_date,hour_label,section,buyer,style,color,item,
-        process_name,operator,emp_no,qty,created_by))
+            INSERT INTO production_entries
+            (entry_date, hour_label, section, buyer_name, style_name, color_name, item_name,
+            process_name, operator_name, operator_id, production_qty, created_by)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """, (
+            entry_date, auto_hour, section, buyer, style, color, item,
+            process_name, operator, emp_no, qty, created_by
+        ))
 
         conn.commit()
-
         return redirect("/entry")
 
-
+    # ডাটাবেস কানেকশন ক্লোজ করা
     cur.close()
     conn.close()
 
@@ -269,12 +269,10 @@ def entry():
         processes=processes,
         operators=operators,
         master_rows=master_rows,
-        today=today
+        today=today,
+        auto_shift=auto_shift,
+        auto_hour=auto_hour
     )
-# =========================
-# SECTION → PROCESS API
-# =========================
-
 @app.route("/get_processes/<section>")
 @login_required
 def get_processes(section):
