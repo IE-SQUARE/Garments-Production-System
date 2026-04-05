@@ -1161,58 +1161,54 @@ def style_details():
                            style_list=style_list, 
                            details_data=details_data, 
                            selected_info=selected_info)
-@app.route('/bulk_import_operator', methods=['POST'])
+@app.route('/bulk_import_buyer', methods=['POST'])
 @login_required
-def bulk_import_operator():
+def bulk_import_buyer():
     if 'file' not in request.files:
         return "No file uploaded", 400
     
     file = request.files['file']
-    if file.filename == '':
-        return "No file selected", 400
+    if file.filename == '' or not file.filename.endswith('.csv'):
+        return "Invalid file format. Please upload a .csv file.", 400
 
-    if file and file.filename.endswith('.csv'):
-        # utf-8-sig ব্যবহার করা হয়েছে যাতে এক্সেলের স্পেশাল ক্যারেক্টার সমস্যা না করে
-        csv_file = TextIOWrapper(file.stream, encoding='utf-8-sig')
-        reader = csv.DictReader(csv_file)
-        
-        # আপনার ছবির মতো হেডার থেকে বাড়তি স্পেস সরানোর জন্য
-        reader.fieldnames = [name.strip() for name in reader.fieldnames]
-        
-        conn = db()
-        cur = conn.cursor()
-        
-        success_count = 0
-        try:
-            for row in reader:
-                # আপনার ফাইলের হেডার অনুযায়ী ডাটা নেওয়া
-                name = (row.get('Operator Name') or "").strip()
-                op_id = (row.get('Operator ID') or "").strip()
-
-                if not name or not op_id:
-                    continue
-
-                # ডাটাবেসে সেভ করা (যদি আইডি আগে থাকে তবে এরর না দিয়ে স্কিপ করবে)
-                try:
-                    cur.execute("""
-                        INSERT INTO operators (operator_id, operator_name, is_active)
-                        VALUES (%s, %s, 1)
-                    """, (op_id, name))
-                    success_count += 1
-                except:
-                    conn.rollback() # ডুপ্লিকেট আইডির জন্য এই রো স্কিপ হবে
-                    continue
-                
-            conn.commit()
-            return redirect("/operators")
-        except Exception as e:
-            conn.rollback()
-            return f"Database Error: {str(e)}", 500
-        finally:
-            cur.close()
-            conn.close()
+    csv_file = TextIOWrapper(file.stream, encoding='utf-8-sig')
+    reader = csv.DictReader(csv_file)
+    reader.fieldnames = [name.strip() for name in reader.fieldnames]
     
-    return "Invalid file format. Please upload a .csv file.", 400
+    conn = db()
+    cur = conn.cursor()
+    
+    try:
+        for row in reader:
+            buyer = (row.get('Buyer') or row.get('buyer') or "").strip()
+            style = (row.get('Style') or row.get('style') or "").strip()
+            color = (row.get('Color') or row.get('color') or "").strip()
+            item = (row.get('Item') or row.get('item') or "").strip()
+
+            if not buyer or not style:
+                continue
+
+            # ডুপ্লিকেট চেক এবং ডিলিট লজিক
+            cur.execute("""
+                DELETE FROM master_data 
+                WHERE LOWER(buyer)=LOWER(%s) AND LOWER(style)=LOWER(%s) 
+                AND LOWER(color)=LOWER(%s) AND LOWER(item)=LOWER(%s)
+            """, (buyer, style, color, item))
+
+            # নতুন ডাটা ইনসার্ট
+            cur.execute("""
+                INSERT INTO master_data (buyer, style, color, item, is_active)
+                VALUES (%s, %s, %s, %s, 1)
+            """, (buyer, style, color, item))
+            
+        conn.commit()
+        return "Bulk data processed and duplicates updated successfully!"
+    except Exception as e:
+        conn.rollback()
+        return f"Database Error: {str(e)}", 500
+    finally:
+        cur.close()
+        conn.close()
 
 @app.route('/user_access', methods=['GET', 'POST'])
 @login_required
