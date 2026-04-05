@@ -3,128 +3,202 @@
 {% block content %}
 
 <style>
-    .report-table {
-        border-collapse: collapse;
-        width: 100%;
-        background: #ffffff;
+    /* ১. জেনারেল কন্টেইনার স্টাইল */
+    .report-page-wrapper {
+        padding: 10px;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
 
-    .report-table th,
+    /* ২. ফিল্টার সেকশন ডিজাইন (বক্সগুলোর অ্যালাইনমেন্ট ঠিক করতে) */
+    .filter-container {
+        background-color: #f8f9fa;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 30px;
+        border: 1px solid #e9ecef;
+    }
+
+    .filter-form {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+        align-items: flex-end; /* এটি নিশ্চিত করে যে সব বক্স এবং বাটন নিচ থেকে সমান থাকবে */
+    }
+
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .filter-group label {
+        margin-bottom: 6px;
+        font-weight: 600;
+        font-size: 14px;
+        color: #495057;
+    }
+
+    /* ৩. ইনপুট, সিলেক্ট এবং বাটন - সবগুলোর হাইট ৩৮ পিক্সেল (Fixed Height) */
+    .filter-input, 
+    .filter-select, 
+    .btn-action {
+        height: 38px !important;
+        padding: 6px 12px;
+        font-size: 14px;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        box-sizing: border-box; /* এটি প্যাডিংয়ের কারণে হাইট বাড়তে দেয় না */
+        background-color: #ffffff;
+    }
+
+    /* ৪. বাটন স্পেসিফিক স্টাইল */
+    .btn-generate {
+        background-color: #ffffff;
+        color: #212529;
+        cursor: pointer;
+        font-weight: 500;
+        border: 1px solid #adadad;
+        transition: background 0.2s;
+    }
+
+    .btn-generate:hover {
+        background-color: #e2e6ea;
+    }
+
+    .btn-export {
+        background-color: #007bff;
+        color: #ffffff;
+        border: none;
+        cursor: pointer;
+        font-weight: 500;
+        padding: 0 20px;
+    }
+
+    .btn-export:hover {
+        background-color: #0056b3;
+    }
+
+    /* ৫. রিপোর্ট টেবিল ডিজাইন */
+    .report-table-container {
+        overflow-x: auto;
+    }
+
+    .report-table {
+        width: 100%;
+        border-collapse: collapse;
+        background-color: #ffffff;
+    }
+
+    .report-table th, 
     .report-table td {
-        border: 1px solid #dddddd;
-        padding: 10px;
+        border: 1px solid #dee2e6;
+        padding: 12px 8px;
         text-align: center;
         font-size: 14px;
     }
 
     .report-table th {
-        background: #f8f9fa;
+        background-color: #f8f9fa;
+        color: #333;
         font-weight: bold;
-        color: #333333;
     }
 
-    .filter-container {
-        margin-bottom: 25px;
-        padding: 15px;
-        background: #f1f3f5;
-        border-radius: 6px;
+    .report-table tr:hover {
+        background-color: #f1f3f5;
     }
 
-    .export-btn {
-        padding: 8px 16px;
-        background-color: #007bff;
-        color: #ffffff;
-        border: none;
-        border-radius: 4px;
-        margin-left: 10px;
-        cursor: pointer;
-        font-weight: 500;
-    }
-
-    .export-btn:hover {
-        background-color: #0056b3;
-    }
+    .text-bold { font-weight: bold; }
+    .text-blue { color: #007bff; }
 </style>
 
-<h2 style="margin-bottom: 20px;">Production Performance Report</h2>
+<div class="report-page-wrapper">
+    <h2 style="margin-bottom: 25px;">Production Performance Report</h2>
 
-<div class="filter-container">
-    <form method="get">
-        <label>Start Date:</label>
-        <input type="date" name="from_date" value="{{ from_date }}">
-        
-        <label style="margin-left: 10px;">End Date:</label>
-        <input type="date" name="to_date" value="{{ to_date }}"> 
+    <div class="filter-container">
+        <form method="get" class="filter-form">
+            <div class="filter-group">
+                <label>Start Date:</label>
+                <input type="date" name="from_date" value="{{ from_date }}" class="filter-input">
+            </div>
 
-        <label style="margin-left: 10px;">Section:</label>
-        <select name="section" style="padding: 4px;">
-            <option value="">All Sections</option>
-            {% for s in sections %}
-            <option value="{{ s.section }}" {% if section == s.section %}selected{% endif %}>
-                {{ s.section }}
-            </option>
-            {% endfor %}
-        </select>
+            <div class="filter-group">
+                <label>End Date:</label>
+                <input type="date" name="to_date" value="{{ to_date }}" class="filter-input">
+            </div>
 
-        <button type="submit" style="padding: 5px 15px; margin-left: 10px; cursor: pointer;">Generate Report</button>
+            <div class="filter-group">
+                <label>Section:</label>
+                <select name="section" class="filter-select" style="min-width: 180px;">
+                    <option value="">All Sections</option>
+                    {% for s in sections %}
+                    <option value="{{ s.section }}" {% if section == s.section %}selected{% endif %}>
+                        {{ s.section }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
 
-        <button id="exportButton" type="button" class="export-btn">
-            Export to Excel
-        </button>
-    </form>
+            <button type="submit" class="btn-action btn-generate">Generate Report</button>
+            
+            <button id="exportButton" type="button" class="btn-action btn-export">
+                Export to Excel
+            </button>
+        </form>
+    </div>
+
+    <div class="report-table-container">
+        <table class="report-table">
+            <thead>
+                <tr>
+                    <th>Serial No.</th>
+                    <th>Buyer Name</th>
+                    <th>Style Identification</th>
+                    <th>Color</th>
+                    <th>Process Name</th>
+                    <th>Day Shift Qty</th>
+                    <th>Night Shift Qty</th>
+                    <th>Daily Total</th>
+                    <th>Cumulative Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in rows %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td>{{ r.buyer_name }}</td>
+                    <td>{{ r.style_name }}</td>
+                    <td>{{ r.color_name }}</td>
+                    <td>{{ r.process_name }}</td>
+                    <td>{{ r.day_qty }}</td>
+                    <td>{{ r.night_qty }}</td>
+                    <td class="text-bold">{{ r.total_qty }}</td>
+                    <td class="text-bold text-blue">{{ r.cum_total }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="9" style="padding: 20px; color: #666;">No production records found for the selected criteria.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
-
-<table class="report-table">
-    <thead>
-        <tr>
-            <th>Serial No.</th>
-            <th>Buyer Name</th>
-            <th>Style Identification</th>
-            <th>Color</th>
-            <th>Process Name</th>
-            <th>Day Shift Qty</th>
-            <th>Night Shift Qty</th>
-            <th>Daily Total</th>
-            <th>Cumulative Total</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for r in rows %}
-        <tr>
-            <td>{{ loop.index }}</td>
-            <td>{{ r.buyer_name }}</td>
-            <td>{{ r.style_name }}</td>
-            <td>{{ r.color_name }}</td>
-            <td>{{ r.process_name }}</td>
-            <td>{{ r.day_qty }}</td>
-            <td>{{ r.night_qty }}</td>
-            <td style="font-weight: bold;">{{ r.total_qty }}</td>
-            <td style="font-weight: bold; color: #1a73e8;">{{ r.cum_total }}</td>
-        </tr>
-        {% else %}
-        <tr>
-            <td colspan="9">No records found matching the specified criteria.</td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
 
 <script>
 document.getElementById('exportButton').onclick = function() {
     const table = document.querySelector(".report-table"); 
     if (!table || table.rows.length <= 1) {
-        alert("No data available for export.");
+        alert("No data available to export!");
         return;
     }
 
     const rows = Array.from(table.rows);
     const headers = Array.from(rows[0].cells).map(cell => cell.innerText);
     const reportData = rows.slice(1).map(row => {
-        let rowObject = {};
-        Array.from(row.cells).forEach((cell, index) => {
-            rowObject[headers[index]] = cell.innerText;
+        let obj = {};
+        Array.from(row.cells).forEach((cell, i) => {
+            obj[headers[i]] = cell.innerText;
         });
-        return rowObject;
+        return obj;
     });
 
     fetch('/export_excel', {
@@ -134,16 +208,16 @@ document.getElementById('exportButton').onclick = function() {
     })
     .then(response => {
         if (response.ok) return response.blob();
-        throw new Error('Export process failed.');
+        throw new Error('Export failed');
     })
     .then(blob => {
-        const downloadUrl = window.URL.createObjectURL(blob);
-        const anchorElement = document.createElement('a');
-        anchorElement.href = downloadUrl;
-        anchorElement.download = 'Production_Report_Data.xlsx';
-        anchorElement.click();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'Production_Performance_Report.xlsx';
+        a.click();
     })
-    .catch(error => alert("System Error: " + error.message));
+    .catch(err => alert("Error: " + err.message));
 };
 </script>
 
