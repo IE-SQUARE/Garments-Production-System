@@ -1,240 +1,176 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <title>Production System</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #eef1f5;
+        }
 
-<style>
+        /* ১. স্লিম টপবার ডিজাইন (আপনার দেওয়া কোড অনুযায়ী) */
+        .navbar-custom {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 45px; /* স্লিম হাইট */
+            background-color: #1a4d7c;
+            display: flex;
+            align-items: center;
+            padding: 0 15px;
+            box-sizing: border-box;
+            z-index: 1001;
+            overflow: hidden;
+        }
 
-body{
-margin:0;
-padding:0;
-}
+        /* ২. লোগো সাইজ কন্ট্রোল - যেন বড় না হয় */
+        .brand-section {
+            display: flex;
+            align-items: center;
+            height: 100%;
+            text-decoration: none;
+        }
 
-.content{
-margin:10px;
-padding:5px;
-}
+        .brand-section img {
+            height: 30px !important; /* লোগো ছোট রাখার জন্য */
+            width: auto !important;
+            object-fit: contain;
+        }
 
-.main-content{
-margin-left:20px;
-padding:15px;
-}
-m
-input, select{
+        .company-name {
+            color: white;
+            font-weight: bold;
+            margin-left: 10px;
+            font-size: 14px;
+        }
 
-width:220px;
-height:36px;
+        /* ৩. টপবার ডান পাশ (ইউজার ইনফো) */
+        .user-section {
+            margin-left: auto;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
 
-padding:3px 8px;
+        .user-section span {
+            font-size: 13px;
+        }
 
-font-size:14px;
+        .logout-icon {
+            height: 20px;
+            width: auto;
+            filter: invert(1);
+            vertical-align: middle;
+        }
 
-border:px solid #999;
+        /* ৪. সাইডবার স্টাইল */
+        .sidebar {
+            position: fixed;
+            top: 45px; /* টপবারের হাইট অনুযায়ী */
+            left: 0;
+            width: 220px;
+            height: calc(100vh - 45px);
+            background-color: #f4f4f4;
+            display: flex;
+            flex-direction: column;
+            z-index: 1000;
+            border-right: 1px solid #ddd;
+            overflow-y: auto;
+        }
 
-box-sizing:border-box;
+        .sidebar a {
+            padding: 12px 20px;
+            text-decoration: none;
+            font-size: 14px;
+            color: #333;
+            display: block;
+            font-weight: bold;
+            border-bottom: 1px solid #e0e0e0;
+            transition: 0.3s;
+        }
 
-}
+        .sidebar a:hover {
+            background-color: #1a5a8c;
+            color: #ffffff;
+        }
 
-.master-box{
+        /* ৫. মেইন কন্টেন্ট এরিয়া */
+        .content {
+            margin-left: 230px;
+            margin-top: 60px; /* কন্টেন্ট ওপর থেকে গ্যাপ */
+            padding: 20px;
+        }
 
-width:480px;
-
-}
-
-button{
-
-margin-top:10px;
-
-padding:8px 20px;
-
-font-size:14px;
-
-cursor:pointer;
-
-}
-
-</style>
-
-<title>Production System</title>
-
-<link rel="stylesheet" href="/static/style.css">
-
-<style>
-
-body{
-margin:0;
-font-family:Arial;
-background:#eef1f5;
-}
-/* টপবার এবং সাইডবার স্টাইল */
-
-.topbar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 60px;
-    background-color: #184d78 !important;
-    color: white !important;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 25px;
-    box-sizing: border-box;
-    z-index: 1001;
-}
-
-.sidebar {
-    position: fixed;
-    top: 60px;
-    left: 0;
-    width: 220px;
-    /* হাইট স্ক্রিনের শেষ পর্যন্ত নিশ্চিত করার জন্য */
-    height: calc(100vh - 60px) !important; 
-    background-color: #f4f4f4 !important; /* হালকা ধূসর কালার */
-    display: flex;
-    flex-direction: column;
-    padding-top: 10px;
-    z-index: 1000;
-    border-right: 1px solid #ddd;
-    overflow-y: auto; /* মেনু বেশি হলে যেন স্ক্রল করা যায় */
-}
-
-.sidebar a {
-    padding: 15px 20px;
-    text-decoration: none;
-    font-size: 15px;
-    color: #333333 !important; /* গাঢ় ধূসর লেখা যেন দেখা যায় */
-    display: block;
-    font-weight: bold;
-    border-bottom: 1px solid #e0e0e0;
-    transition: 0.3s;
-}
-.sidebar a:hover {
-    background-color: #1a5a8c !important; /* মাউস নিলে সামান্য রঙ পরিবর্তন */
-    color: #ffffff !important;
-}
-
-/* কন্টেন্ট যেন সাইডবারের নিচে না যায় */
-.content {
-    margin-left: 230px !important;
-    margin-top: 80px !important;
-    padding: 20px;
-}
-
-/* মেইন কন্টেন্ট যেন সাইডবারের নিচে না চলে যায় */
-.content {
-    margin-left: 230px;
-    margin-top: 80px;
-    padding: 20px;
-}
-    
-/* কন্টেন্ট এরিয়া ঠিক করার জন্য */
-.content {
-    margin-left: 230px; /* সাইডবারের জায়গাটুকু বাদ দিয়ে কন্টেন্ট শুরু হবে */
-    padding: 20px;
-    margin-top: 70px;
-}
-
-</style>
-
+        /* ইনপুট বক্স ডিজাইন */
+        input, select {
+            width: 220px;
+            height: 32px;
+            padding: 3px 8px;
+            font-size: 13px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+    </style>
 </head>
-
 <body>
 
-<div class="topbar">
+    <nav class="navbar-custom">
+        <a href="/" class="brand-section">
+            <img src="{{ url_for('static', filename='logo.png') }}" alt="SQUARE">
+            <span class="company-name">SQUARE DENIMS LIMITED</span>
+        </a>
 
-<div class="top-left">
+        <div class="user-section">
+            <span>{{ name }}</span>
+            <a href="/logout">
+                <img src="{{ url_for('static', filename='logout.png') }}" class="logout-icon" alt="Logout">
+            </a>
+        </div>
+    </nav>
+    <div class="sidebar">
+        <a href="/dashboard">Home</a>
+        <a href="/entry">Data Entry</a>
+        <a href="/create_batch">Batch Creation</a>
+        <a href="/style_details">Style Details</a>
+        <a href="/master_data">Style Update</a>
 
-<img src="{{ url_for('static', filename='logo.png') }}" class="logo">
+        <a href="#" onclick="toggleDry()">Dry Process Report</a>
+        <div id="dryMenu" style="display:none; background: #e8e8e8;">
+            <a href="/report" style="padding-left:40px;">Date Wise Report</a>
+            <a href="/operator_status" style="padding-left:40px;">Operator Status</a>
+        </div>
 
-<span class="company-name">
-SQUARE DENIMS LIMITED
-</span>
+        {% if role == "admin" %}
+        <a href="#" onclick="toggleAdmin()">Admin Panel</a>
+        <div id="adminMenu" style="display:none; background: #e8e8e8;">
+            <a href="/users" style="padding-left:40px;">User Management</a>
+            <a href="/operators" style="padding-left:40px;">Operator Management</a>
+            <a href="/shifts" style="padding-left:40px;">Shift Management</a>
+        </div>
+        {% endif %}
+    </div>
+    <div class="content">
+        {% block content %}
+        {% endblock %}
+    </div>
 
-</div>
+    <script>
+        function toggleAdmin() {
+            var menu = document.getElementById("adminMenu");
+            menu.style.display = (menu.style.display === "none") ? "block" : "none";
+        }
 
-<div class="top-right">
-
-<span class="user-name">{{name}}</span>
-
-<a href="/logout" class="logout-btn">
-<img src="{{ url_for('static', filename='logout.png') }}" class="logout-icon">
-</a>
-
-</div>
-
-</div>
-
-
-<div class="sidebar">
-
-<a href="/dashboard">Home</a>
-<a href="/entry">Data Entry</a>
-<a href="/create_batch">Batch Creation</a>
-<a href="/style_details">Style Details</a>
-<a href="/master_data">Style Update</a>
-
-<a href="#" onclick="toggleDry()">Dry Process Report</a>
-
-<div id="dryMenu" style="display:none;">
-<a href="/report" style="padding-left:40px;">Date Wise Report</a>
-<a href="/operator_status" style="padding-left:40px;">Operator Status</a>
-</div>
-
-{% if role == "admin" %}
-
-<a href="#" onclick="toggleAdmin()">Admin Panel</a>
-
-<div id="adminMenu" style="display:none;">
-<a href="/users" style="padding-left:40px;">User Management</a>
-<a href="/operators" style="padding-left:40px;">Operator Management</a>
-<a href="/shifts" style="padding-left:40px;">Shift Management</a>
-</div>
-
-{% endif %}
-
-</div><a href="/users">User Management</a>
-<a href="/shifts">Shift Management</a>
-
-</div>
-
-
-<div class="content">
-
-{% block content %}
-{% endblock %}
-
-</div>
-
-<script>
-
-function toggleAdmin(){
-
-var menu = document.getElementById("adminMenu");
-
-if(menu.style.display === "none"){
-menu.style.display = "block";
-}
-else{
-menu.style.display = "none";
-}
-
-}
-
-function toggleDry(){
-
-var menu = document.getElementById("dryMenu");
-
-if(menu.style.display === "none"){
-menu.style.display = "block";
-}
-else{
-menu.style.display = "none";
-}
-
-}
-
-</script>
+        function toggleDry() {
+            var menu = document.getElementById("dryMenu");
+            menu.style.display = (menu.style.display === "none") ? "block" : "none";
+        }
+    </script>
 
 </body>
 </html>
