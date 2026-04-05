@@ -1,240 +1,39 @@
-<!DOCTYPE html>
-<html>
-<head>
-
-<style>
-
-body{
-margin:0;
-padding:0;
-}
-
-.content{
-margin:10px;
-padding:5px;
-}
-
-.main-content{
-margin-left:20px;
-padding:15px;
-}
-m
-input, select{
-
-width:220px;
-height:36px;
-
-padding:3px 8px;
-
-font-size:14px;
-
-border:px solid #999;
-
-box-sizing:border-box;
-
-}
-
-.master-box{
-
-width:480px;
-
-}
-
-button{
-
-margin-top:10px;
-
-padding:8px 20px;
-
-font-size:14px;
-
-cursor:pointer;
-
-}
-
-</style>
-
-<title>Production System</title>
-
-<link rel="stylesheet" href="/static/style.css">
-
-<style>
-
-body{
-margin:0;
-font-family:Arial;
-background:#eef1f5;
-}
-/* টপবার এবং সাইডবার স্টাইল */
-
-.topbar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 60px;
-    background-color: #184d78 !important;
-    color: white !important;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 25px;
-    box-sizing: border-box;
-    z-index: 1001;
-}
-
-.sidebar {
-    position: fixed;
-    top: 60px;
-    left: 0;
-    width: 220px;
-    /* হাইট স্ক্রিনের শেষ পর্যন্ত নিশ্চিত করার জন্য */
-    height: calc(100vh - 60px) !important; 
-    background-color: #f4f4f4 !important; /* হালকা ধূসর কালার */
-    display: flex;
-    flex-direction: column;
-    padding-top: 10px;
-    z-index: 1000;
-    border-right: 1px solid #ddd;
-    overflow-y: auto; /* মেনু বেশি হলে যেন স্ক্রল করা যায় */
-}
-
-.sidebar a {
-    padding: 15px 20px;
-    text-decoration: none;
-    font-size: 15px;
-    color: #333333 !important; /* গাঢ় ধূসর লেখা যেন দেখা যায় */
-    display: block;
-    font-weight: bold;
-    border-bottom: 1px solid #e0e0e0;
-    transition: 0.3s;
-}
-.sidebar a:hover {
-    background-color: #1a5a8c !important; /* মাউস নিলে সামান্য রঙ পরিবর্তন */
-    color: #ffffff !important;
-}
-
-/* কন্টেন্ট যেন সাইডবারের নিচে না যায় */
-.content {
-    margin-left: 230px !important;
-    margin-top: 80px !important;
-    padding: 20px;
-}
-
-/* মেইন কন্টেন্ট যেন সাইডবারের নিচে না চলে যায় */
-.content {
-    margin-left: 230px;
-    margin-top: 80px;
-    padding: 20px;
-}
-    
-/* কন্টেন্ট এরিয়া ঠিক করার জন্য */
-.content {
-    margin-left: 230px; /* সাইডবারের জায়গাটুকু বাদ দিয়ে কন্টেন্ট শুরু হবে */
-    padding: 20px;
-    margin-top: 70px;
-}
-
-</style>
-
-</head>
-
-<body>
-
-<div class="topbar">
-
-<div class="top-left">
-
-<img src="{{ url_for('static', filename='logo.png') }}" class="logo">
-
-<span class="company-name">
-SQUARE DENIMS LIMITED
-</span>
-
-</div>
-
-<div class="top-right">
-
-<span class="user-name">{{name}}</span>
-
-<a href="/logout" class="logout-btn">
-<img src="{{ url_for('static', filename='logout.png') }}" class="logout-icon">
-</a>
-
-</div>
-
-</div>
-
-
 <div class="sidebar">
+    <a href="/dashboard">Home</a>
 
-<a href="/dashboard">Home</a>
-<a href="/entry">Data Entry</a>
-<a href="/create_batch">Batch Creation</a>
-<a href="/style_details">Style Details</a>
-<a href="/master_data">Style Update</a>
+    {% if role == "admin" %}
+    <a href="#" onclick="toggleAdmin()" style="background: #e0e0e0; color: #184d78 !important;">Admin Panel ▾</a>
+    <div id="adminMenu" style="display:none; background: #f9f9f9;">
+        <a href="/user_access" style="padding-left:40px;">User Access</a>
+        <a href="/users" style="padding-left:40px;">User Management</a>
+        <a href="/operators" style="padding-left:40px;">Operator Management</a>
+        <a href="/shifts" style="padding-left:40px;">Shift Management</a>
+    </div>
+    {% endif %}
 
-<a href="#" onclick="toggleDry()">Dry Process Report</a>
+    {% if role == "admin" or 'Production' in session.get('permissions', []) %}
+        <a href="/entry">Data Entry</a>
+    {% endif %}
 
-<div id="dryMenu" style="display:none;">
-<a href="/report" style="padding-left:40px;">Date Wise Report</a>
-<a href="/operator_status" style="padding-left:40px;">Operator Status</a>
+    {% if role == "admin" or 'Batch Creation' in session.get('permissions', []) %}
+        <a href="/create_batch">Batch Creation</a>
+    {% endif %}
+
+    {% if role == "admin" or 'Style Summary' in session.get('permissions', []) %}
+        <a href="/style_details">Style Details</a>
+    {% endif %}
+
+    {% if role == "admin" or 'Operator Management' in session.get('permissions', []) %}
+        <a href="/master_data">Style Update</a>
+    {% endif %}
+
+    {% if role == "admin" or 'Reports' in session.get('permissions', []) %}
+    <a href="#" onclick="toggleDry()" style="background: #e0e0e0; color: #184d78 !important;">Dry Process Report ▾</a>
+    <div id="dryMenu" style="display:none; background: #f9f9f9;">
+        <a href="/report" style="padding-left:40px;">Date Wise Report</a>
+        <a href="/operator_status" style="padding-left:40px;">Operator Status</a>
+    </div>
+    {% endif %}
+
+    <a href="/logout" style="color: #d9534f !important;">Logout</a>
 </div>
-
-{% if role == "admin" %}
-
-<a href="#" onclick="toggleAdmin()">Admin Panel</a>
-
-<div id="adminMenu" style="display:none;">
-<a href="/users" style="padding-left:40px;">User Management</a>
-<a href="/operators" style="padding-left:40px;">Operator Management</a>
-<a href="/shifts" style="padding-left:40px;">Shift Management</a>
-</div>
-
-{% endif %}
-
-</div><a href="/users">User Management</a>
-<a href="/shifts">Shift Management</a>
-
-</div>
-
-
-<div class="content">
-
-{% block content %}
-{% endblock %}
-
-</div>
-
-<script>
-
-function toggleAdmin(){
-
-var menu = document.getElementById("adminMenu");
-
-if(menu.style.display === "none"){
-menu.style.display = "block";
-}
-else{
-menu.style.display = "none";
-}
-
-}
-
-function toggleDry(){
-
-var menu = document.getElementById("dryMenu");
-
-if(menu.style.display === "none"){
-menu.style.display = "block";
-}
-else{
-menu.style.display = "none";
-}
-
-}
-
-</script>
-
-</body>
-</html>
