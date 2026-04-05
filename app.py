@@ -846,26 +846,31 @@ def operator_detail():
 @app.route("/master_data", methods=["GET","POST"])
 @login_required
 def master_data():
-
     conn = db()
     cur = conn.cursor()
 
     if request.method == "POST":
-
         buyer = request.form.get("buyer")
         style = request.form.get("style")
         color = request.form.get("color")
         item = request.form.get("item")
 
-        cur.execute("""
-        INSERT INTO master_data (buyer,style,color,item,is_active)
-        VALUES (%s,%s,%s,%s,1)
-        """,(buyer,style,color,item))
+        try:
+            # এখানেও buyer_name এর বদলে buyer ব্যবহার করতে হবে
+            cur.execute("""
+                INSERT INTO master_data (buyer, style, color, item, is_active)
+                VALUES (%s, %s, %s, %s, 1)
+            """, (buyer, style, color, item))
+            conn.commit()
+        except Exception as e:
+            conn.rollback()
+            print(f"Error: {e}")
 
-        conn.commit()
-
-    cur.execute("SELECT * FROM master_data ORDER BY buyer")
+    cur.execute("SELECT * FROM master_data ORDER BY id DESC")
     rows = cur.fetchall()
+    
+    cur.close()
+    conn.close()
 
     return render_template("master_data.html", rows=rows)
 @app.route("/disable_style/<int:id>")
@@ -1038,6 +1043,8 @@ def bulk_import_buyer():
     if file and file.filename.endswith('.csv'):
         csv_file = TextIOWrapper(file.stream, encoding='utf-8-sig')
         reader = csv.DictReader(csv_file)
+        
+        # স্পেস বা ইনভিজিবল ক্যারেক্টার হ্যান্ডেল করার জন্য
         reader.fieldnames = [name.strip() for name in reader.fieldnames]
         
         conn = db()
@@ -1045,21 +1052,24 @@ def bulk_import_buyer():
         
         try:
             for row in reader:
-                # CSV থেকে ডাটা নেওয়া
-                buyer = (row.get('Buyer') or row.get('Buyer ')).strip()
-                style = row.get('Style').strip()
-                color = row.get('Color').strip()
-                item = row.get('Item').strip()
+                # CSV থেকে ডাটা নেওয়া (ভ্যারিয়েবল নাম আপনার CSV হেডার অনুযায়ী হবে)
+                buyer = (row.get('Buyer') or row.get('buyer') or "").strip()
+                style = (row.get('Style') or row.get('style') or "").strip()
+                color = (row.get('Color') or row.get('color') or "").strip()
+                item = (row.get('Item') or row.get('item') or "").strip()
 
-                # 'ON CONFLICT DO NOTHING' ব্যবহার করা হয়েছে যাতে ডুপ্লিকেট হলে এরর না দেয়
+                if not buyer or not style:
+                    continue
+
+                # ডাটাবেস কলামের নাম অনুযায়ী কুয়েরি (buyer_name এর বদলে buyer)
                 cur.execute("""
-                    INSERT INTO master_data (buyer_name, style_name, color_name, item_name)
-                    VALUES (%s, %s, %s, %s)
-                    ON CONFLICT (buyer_name, style_name, color_name, item_name) DO NOTHING
+                    INSERT INTO master_data (buyer, style, color, item, is_active)
+                    VALUES (%s, %s, %s, %s, 1)
+                    ON CONFLICT DO NOTHING
                 """, (buyer, style, color, item))
                 
             conn.commit()
-            return "Bulk data processed! (Duplicate entries were skipped automatically)"
+            return "Bulk data processed successfully!"
         except Exception as e:
             conn.rollback()
             return f"Database Error: {str(e)}", 500
@@ -1068,6 +1078,7 @@ def bulk_import_buyer():
             conn.close()
     
     return "Invalid file format. Please upload a .csv file.", 400
+
 @app.route('/style_details')
 @login_required
 def style_details():
