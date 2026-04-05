@@ -1141,33 +1141,39 @@ def bulk_import_operator():
         return "No file selected", 400
 
     if file and file.filename.endswith('.csv'):
+        # utf-8-sig ব্যবহার করা হয়েছে যাতে এক্সেলের স্পেশাল ক্যারেক্টার সমস্যা না করে
         csv_file = TextIOWrapper(file.stream, encoding='utf-8-sig')
         reader = csv.DictReader(csv_file)
         
-        # হেডার থেকে স্পেস সরানোর জন্য
+        # আপনার ছবির মতো হেডার থেকে বাড়তি স্পেস সরানোর জন্য
         reader.fieldnames = [name.strip() for name in reader.fieldnames]
         
         conn = db()
         cur = conn.cursor()
         
+        success_count = 0
         try:
             for row in reader:
-                # CSV হেডার অনুযায়ী ডাটা নেওয়া (নাম এবং আইডি)
-                name = (row.get('Operator Name') or row.get('name') or "").strip()
-                op_id = (row.get('Operator ID') or row.get('id') or "").strip()
+                # আপনার ফাইলের হেডার অনুযায়ী ডাটা নেওয়া
+                name = (row.get('Operator Name') or "").strip()
+                op_id = (row.get('Operator ID') or "").strip()
 
                 if not name or not op_id:
                     continue
 
-                # ডুপ্লিকেট আইডি এড়াতে ON CONFLICT ব্যবহার করা হয়েছে
-                cur.execute("""
-                    INSERT INTO operators (operator_id, operator_name, is_active)
-                    VALUES (%s, %s, 1)
-                    ON CONFLICT (operator_id) DO NOTHING
-                """, (op_id, name))
+                # ডাটাবেসে সেভ করা (যদি আইডি আগে থাকে তবে এরর না দিয়ে স্কিপ করবে)
+                try:
+                    cur.execute("""
+                        INSERT INTO operators (operator_id, operator_name, is_active)
+                        VALUES (%s, %s, 1)
+                    """, (op_id, name))
+                    success_count += 1
+                except:
+                    conn.rollback() # ডুপ্লিকেট আইডির জন্য এই রো স্কিপ হবে
+                    continue
                 
             conn.commit()
-            return "Operator data processed successfully!"
+            return redirect("/operators")
         except Exception as e:
             conn.rollback()
             return f"Database Error: {str(e)}", 500
