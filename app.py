@@ -9,6 +9,7 @@ import os
 import pandas as pd
 from io import BytesIO
 import pytz
+import csv
 
 app = Flask(__name__)
 app.secret_key = "abc123xyz789_secure"
@@ -1161,54 +1162,6 @@ def style_details():
                            style_list=style_list, 
                            details_data=details_data, 
                            selected_info=selected_info)
-@app.route('/bulk_import_buyer', methods=['POST'])
-@login_required
-def bulk_import_buyer():
-    if 'file' not in request.files:
-        return "No file uploaded", 400
-    
-    file = request.files['file']
-    if file.filename == '' or not file.filename.endswith('.csv'):
-        return "Invalid file format. Please upload a .csv file.", 400
-
-    csv_file = TextIOWrapper(file.stream, encoding='utf-8-sig')
-    reader = csv.DictReader(csv_file)
-    reader.fieldnames = [name.strip() for name in reader.fieldnames]
-    
-    conn = db()
-    cur = conn.cursor()
-    
-    try:
-        for row in reader:
-            buyer = (row.get('Buyer') or row.get('buyer') or "").strip()
-            style = (row.get('Style') or row.get('style') or "").strip()
-            color = (row.get('Color') or row.get('color') or "").strip()
-            item = (row.get('Item') or row.get('item') or "").strip()
-
-            if not buyer or not style:
-                continue
-
-            # ডুপ্লিকেট চেক এবং ডিলিট লজিক
-            cur.execute("""
-                DELETE FROM master_data 
-                WHERE LOWER(buyer)=LOWER(%s) AND LOWER(style)=LOWER(%s) 
-                AND LOWER(color)=LOWER(%s) AND LOWER(item)=LOWER(%s)
-            """, (buyer, style, color, item))
-
-            # নতুন ডাটা ইনসার্ট
-            cur.execute("""
-                INSERT INTO master_data (buyer, style, color, item, is_active)
-                VALUES (%s, %s, %s, %s, 1)
-            """, (buyer, style, color, item))
-            
-        conn.commit()
-        return "Bulk data processed and duplicates updated successfully!"
-    except Exception as e:
-        conn.rollback()
-        return f"Database Error: {str(e)}", 500
-    finally:
-        cur.close()
-        conn.close()
 
 @app.route('/user_access', methods=['GET', 'POST'])
 @login_required
