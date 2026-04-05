@@ -857,6 +857,7 @@ def operator_detail():
                            rows=rows,
                            emp_id=emp_id,
                            date=date)
+
 @app.route("/master_data", methods=["GET","POST"])
 @login_required
 def master_data():
@@ -864,28 +865,44 @@ def master_data():
     cur = conn.cursor()
 
     if request.method == "POST":
-        buyer = request.form.get("buyer")
-        style = request.form.get("style")
-        color = request.form.get("color")
-        item = request.form.get("item")
+        # ডাটা ক্লিন করা (বাড়তি স্পেস থাকলে বাদ দিবে)
+        buyer = request.form.get("buyer", "").strip()
+        style = request.form.get("style", "").strip()
+        color = request.form.get("color", "").strip()
+        item = request.form.get("item", "").strip()
 
-        try:
-            # এখানেও buyer_name এর বদলে buyer ব্যবহার করতে হবে
-            cur.execute("""
-                INSERT INTO master_data (buyer, style, color, item, is_active)
-                VALUES (%s, %s, %s, %s, 1)
-            """, (buyer, style, color, item))
-            conn.commit()
-        except Exception as e:
-            conn.rollback()
-            print(f"Error: {e}")
+        if buyer and style:
+            try:
+                # ১. ডুপ্লিকেট চেক করা (LOWER ব্যবহার করা হয়েছে যাতে বড়/ছোট হাতের অক্ষরে সমস্যা না হয়)
+                cur.execute("""
+                    SELECT id FROM master_data 
+                    WHERE LOWER(buyer)=LOWER(%s) AND LOWER(style)=LOWER(%s) 
+                    AND LOWER(color)=LOWER(%s) AND LOWER(item)=LOWER(%s)
+                """, (buyer, style, color, item))
+                
+                duplicate = cur.fetchone()
 
+                if duplicate:
+                    # ২. ডুপ্লিকেট থাকলে সেটি ডিলিট করা
+                    cur.execute("DELETE FROM master_data WHERE id=%s", (duplicate['id'],))
+
+                # ৩. ফ্রেশ ডাটা ইনসার্ট করা
+                cur.execute("""
+                    INSERT INTO master_data (buyer, style, color, item, is_active)
+                    VALUES (%s, %s, %s, %s, 1)
+                """, (buyer, style, color, item))
+                
+                conn.commit()
+            except Exception as e:
+                conn.rollback()
+                print(f"Error: {e}")
+
+    # লিস্ট দেখানোর সময় ইউনিক ডাটা দেখানো
     cur.execute("SELECT * FROM master_data ORDER BY id DESC")
     rows = cur.fetchall()
     
     cur.close()
     conn.close()
-
     return render_template("master_data.html", rows=rows)
 @app.route("/disable_style/<int:id>")
 @login_required
