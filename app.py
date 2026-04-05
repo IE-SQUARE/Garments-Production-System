@@ -70,35 +70,44 @@ def home():
 
 @app.route("/login", methods=["GET","POST"])
 def login():
-
     if request.method == "POST":
-
-        updated_from = request.form.get("updated_from")
-        entry_date = request.form.get("entry_date")
         user_id = request.form.get("user_id")
         password = request.form.get("password")
 
         conn = db()
         cur = conn.cursor()
 
-        cur.execute("SELECT * FROM users WHERE user_id=%s",(user_id,))
+        # ১. ইউজার ভ্যালিডেশন চেক
+        cur.execute("SELECT * FROM users WHERE user_id=%s AND password=%s", (user_id, password))
         user = cur.fetchone()
 
-        cur.close()
-        conn.close()
-
         if user:
-
+            # ২. সেশনে ইউজারের বেসিক তথ্য সেভ করা
             session["uid"] = user["id"]
             session["name"] = user["full_name"]
             session["role"] = user["role"]
             session["section"] = user["section"]
             session["login_time"] = datetime.now().strftime("%H:%M")
 
+            # ৩. 🔥 নতুন পারমিশন সিস্টেম: ডাটাবেস থেকে পারমিশন তুলে আনা
+            try:
+                cur.execute("SELECT menu_name FROM user_permissions WHERE user_id = %s", (user_id,))
+                rows = cur.fetchall()
+                # RealDictCursor ব্যবহার করছেন তাই row['menu_name'] হবে
+                session['permissions'] = [row['menu_name'] for row in rows]
+            except Exception as e:
+                print(f"Permission Loading Error: {e}")
+                session['permissions'] = [] # এরর হলে খালি লিস্ট দিবে
+
+            cur.close()
+            conn.close()
             return redirect("/dashboard")
+        
+        cur.close()
+        conn.close()
+        return "Invalid Credentials", 401 # পাসওয়ার্ড বা আইডি ভুল হলে
 
     return render_template("login.html")
-
 
 # =========================
 # DASHBOARD
