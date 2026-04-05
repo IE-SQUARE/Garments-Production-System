@@ -1,66 +1,85 @@
 {% extends "base.html" %}
 
 {% block content %}
+<div style="padding: 20px; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+    
+    <h2 style="color: #184d78; margin-bottom: 20px; border-bottom: 2px solid #184d78; padding-bottom: 10px;">
+        <i class="fas fa-users-cog"></i> Operator Management
+    </h2>
 
-<h2>Operator Management</h2>
+    <div style="background: #ffffff; padding: 20px; border-radius: 4px; margin-bottom: 20px; border: 1px solid #ddd; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+        <h4 style="margin-top: 0; color: #333;">Add New Operator</h4>
+        <form method="post">
+            <div style="display: flex; align-items: flex-end; gap: 10px; flex-wrap: wrap;">
+                <div>
+                    <label style="font-size: 13px; font-weight: bold; display: block; margin-bottom: 5px;">Operator Name</label>
+                    <input name="operator_name" placeholder="Enter Name" required
+                           style="width: 250px; height: 34px; padding: 0 10px; border: 1px solid #ccc; border-radius: 4px; outline: none;">
+                </div>
+                <div>
+                    <label style="font-size: 13px; font-weight: bold; display: block; margin-bottom: 5px;">Operator ID</label>
+                    <input name="operator_id" placeholder="Enter ID" required
+                           style="width: 150px; height: 34px; padding: 0 10px; border: 1px solid #ccc; border-radius: 4px; outline: none;">
+                </div>
+                <button type="submit" style="height: 34px; background: #184d78; color: white; border: none; border-radius: 4px; padding: 0 25px; cursor: pointer; font-weight: bold;">
+                    ADD OPERATOR
+                </button>
+            </div>
+        </form>
+    </div>
 
-<h3>Add Operator</h3>
+    <div style="background: #fdfdfd; padding: 20px; border-radius: 4px; margin-bottom: 25px; border: 1px solid #ddd; border-left: 5px solid #28a745;">
+        <form action="/bulk_import_operator" method="POST" enctype="multipart/form-data">
+            <div style="display: flex; flex-direction: column; gap: 5px;">
+                <label style="font-size: 13px; font-weight: bold; color: #333;">
+                    Bulk Import via CSV (Column: Operator Name, Operator ID)
+                </label>
+                <div style="display: flex; align-items: center; gap: 2px;">
+                    <input type="file" name="file" accept=".csv" required
+                           style="width: 410px; height: 34px; padding: 4px 10px; border: 1px solid #ccc; border-radius: 4px 0 0 4px; font-size: 13px; background: white;">
+                    
+                    <button type="submit" style="height: 34px; background: #28a745; color: white; border: 1px solid #28a745; border-radius: 0 4px 4px 0; padding: 0 30px; cursor: pointer; font-weight: bold; font-size: 12px; text-transform: uppercase;">
+                        UPLOAD CSV
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
 
-<form method="post">
-
-Operator Name<br>
-<input name="operator_name"><br><br>
-
-Operator ID<br>
-<input name="operator_id"><br><br>
-
-<button type="submit">Add Operator</button>
-
-</form>
-
-<hr>
-
-<h3>Operator List</h3>
-
-<table border="1" cellpadding="6">
-
-<tr>
-<th>Operator Name</th>
-<th>Operator ID</th>
-<th>Status</th>
-<th>Action</th>
-</tr>
-
-{% for o in operators %}
-
-<tr>
-
-<td>{{o.operator_name}}</td>
-<td>{{o.operator_id}}</td>
-
-<td>
-{% if o.is_active == 1 %}
-Active
-{% else %}
-Inactive
-{% endif %}
-</td>
-
-<td>
-
-<a href="/edit_operator/{{o.id}}">Edit</a> |
-
-{% if o.is_active == 1 %}
-<a href="/disable_operator/{{o.id}}">Disable</a>
-{% else %}
-<a href="/enable_operator/{{o.id}}">Enable</a>
-{% endif %}
-
-</td>
-
-</tr>
-{% endfor %}
-
-</table>
-
+    <div style="background: white; border-radius: 4px; overflow: hidden; border: 1px solid #ddd;">
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="background: #184d78; color: white; text-align: left;">
+                    <th style="padding: 12px; border: 1px solid #eee;">Operator Name</th>
+                    <th style="padding: 12px; border: 1px solid #eee;">Operator ID</th>
+                    <th style="padding: 12px; border: 1px solid #eee;">Status</th>
+                    <th style="padding: 12px; border: 1px solid #eee; text-align: center;">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for o in operators %}
+                <tr style="border-bottom: 1px solid #eee;">
+                    <td style="padding: 10px; border: 1px solid #eee;">{{ o.operator_name }}</td>
+                    <td style="padding: 10px; border: 1px solid #eee;">{{ o.operator_id }}</td>
+                    <td style="padding: 10px; border: 1px solid #eee;">
+                        {% if o.is_active == 1 %}
+                        <span style="color: green; font-weight: bold;">● Active</span>
+                        {% else %}
+                        <span style="color: red; font-weight: bold;">● Inactive</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 10px; border: 1px solid #eee; text-align: center;">
+                        <a href="/edit_operator/{{o.id}}" style="text-decoration: none; color: #184d78; font-weight: bold;">Edit</a> |
+                        {% if o.is_active == 1 %}
+                        <a href="/disable_operator/{{o.id}}" style="text-decoration: none; color: #d9534f;">Disable</a>
+                        {% else %}
+                        <a href="/enable_operator/{{o.id}}" style="text-decoration: none; color: #5cb85c;">Enable</a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
 {% endblock %}
