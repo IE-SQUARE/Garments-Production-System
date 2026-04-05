@@ -1130,6 +1130,52 @@ def style_details():
                            style_list=style_list, 
                            details_data=details_data, 
                            selected_info=selected_info)
+@app.route('/bulk_import_operator', methods=['POST'])
+@login_required
+def bulk_import_operator():
+    if 'file' not in request.files:
+        return "No file uploaded", 400
+    
+    file = request.files['file']
+    if file.filename == '':
+        return "No file selected", 400
+
+    if file and file.filename.endswith('.csv'):
+        csv_file = TextIOWrapper(file.stream, encoding='utf-8-sig')
+        reader = csv.DictReader(csv_file)
+        
+        # হেডার থেকে স্পেস সরানোর জন্য
+        reader.fieldnames = [name.strip() for name in reader.fieldnames]
+        
+        conn = db()
+        cur = conn.cursor()
+        
+        try:
+            for row in reader:
+                # CSV হেডার অনুযায়ী ডাটা নেওয়া (নাম এবং আইডি)
+                name = (row.get('Operator Name') or row.get('name') or "").strip()
+                op_id = (row.get('Operator ID') or row.get('id') or "").strip()
+
+                if not name or not op_id:
+                    continue
+
+                # ডুপ্লিকেট আইডি এড়াতে ON CONFLICT ব্যবহার করা হয়েছে
+                cur.execute("""
+                    INSERT INTO operators (operator_id, operator_name, is_active)
+                    VALUES (%s, %s, 1)
+                    ON CONFLICT (operator_id) DO NOTHING
+                """, (op_id, name))
+                
+            conn.commit()
+            return "Operator data processed successfully!"
+        except Exception as e:
+            conn.rollback()
+            return f"Database Error: {str(e)}", 500
+        finally:
+            cur.close()
+            conn.close()
+    
+    return "Invalid file format. Please upload a .csv file.", 400
 
 if __name__ == "__main__":
 
