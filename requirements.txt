@@ -1,1 +1,9 @@
-flaskflask-corspsycopg2-binaryqrcodegunicornpython-dotenvpandasopenpyxl
+flask
+flask-cors
+psycopg2-binary
+qrcode
+gunicorn
+python-dotenv
+pandas
+openpyxl
+pytz
