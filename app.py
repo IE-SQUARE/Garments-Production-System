@@ -167,101 +167,109 @@ def dashboard():
 # =========================
 # ENTRY PAGE
 # =========================
-@app.route("/entry", methods=["GET","POST"])
+# ==========================================
+# PRODUCTION ENTRY ROUTE
+# ==========================================
+@app.route("/entry", methods=["GET", "POST"])
 @login_required
 def entry():
-    conn = db()
-    cur = conn.cursor()
+    """
+    Handles the production data entry. 
+    Automatically determines Shift and Hour based on BD Time (07:00 AM start).
+    """
+    connection = db()
+    cursor = connection.cursor()
 
-    # বর্তমান শিফট এবং আওয়ার ডাটা বের করা (BD Time 07:00 AM Logic)
-    auto_shift, auto_hour = get_production_info()
+    # বর্তমান শিফট এবং প্রোডাকশন আওয়ার অটোমেটিক নির্ধারণ (BD Time 07:00 AM Logic)
+    current_shift, current_hour_label = get_production_info()
 
-    # Dropdown: sections
-    cur.execute("""
-    SELECT DISTINCT section
-    FROM processes
-    WHERE is_active=1
-    ORDER BY section
+    # ড্রপডাউনের জন্য সকল সেশন (Sections) ফেচ করা
+    cursor.execute("""
+        SELECT DISTINCT section 
+        FROM processes 
+        WHERE is_active = 1 
+        ORDER BY section
     """)
-    sections = cur.fetchall()
+    sections = cursor.fetchall()
 
-    # Dropdown: processes (Current User's Section)
-    cur.execute("""
-    SELECT id, process_name
-    FROM processes
-    WHERE section=%s AND is_active=1
-    ORDER BY process_name
+    # শুধুমাত্র বর্তমান ইউজারের সেকশন অনুযায়ী প্রসেসগুলো ফেচ করা
+    cursor.execute("""
+        SELECT id, process_name 
+        FROM processes 
+        WHERE section = %s AND is_active = 1 
+        ORDER BY process_name
     """, (session.get("section"),))
-    processes = cur.fetchall()
+    processes = cursor.fetchall()
 
-    # Dropdown: operators
-    cur.execute("""
-    SELECT operator_name, operator_id
-    FROM operators
-    WHERE is_active=1
-    ORDER BY operator_name   
+    # অপারেটরদের লিস্ট ফেচ করা
+    cursor.execute("""
+        SELECT operator_name, operator_id 
+        FROM operators 
+        WHERE is_active = 1 
+        ORDER BY operator_name
     """)
-    operators = cur.fetchall()
+    operators = cursor.fetchall()
 
-    # Dropdown: master data
-    cur.execute("""
-    SELECT buyer, style, color, item,
-    CONCAT(buyer,' / ',style,' / ',color,' / ',item) AS label
-    FROM master_data
-    WHERE is_active=1
-    ORDER BY buyer, style, color, item
+    # মাস্টার স্টাইল ডাটা লেবেলসহ ফেচ করা
+    cursor.execute("""
+        SELECT buyer, style, color, item,
+               CONCAT(buyer, ' / ', style, ' / ', color, ' / ', item) AS label
+        FROM master_data
+        WHERE is_active = 1
+        ORDER BY buyer, style, color, item
     """)
-    master_rows = cur.fetchall()
+    master_rows = cursor.fetchall()
 
     if request.method == "POST":
+        # ফর্ম থেকে ডাটা সংগ্রহ করা
         entry_date = request.form.get("entry_date") or date.today()
         section = request.form.get("section")
         process_id = request.form.get("process_id")
         
-        # অপারেটর ডাটা প্রসেসিং
-        operator_input = request.form.get("operator_name")
-        parts_op = operator_input.split(" - ")
-        operator = parts_op[0] if len(parts_op) > 0 else ""
-        emp_no = parts_op[1] if len(parts_op) > 1 else ""
+        # অপারেটর নাম এবং আইডি আলাদা করা
+        operator_data = request.form.get("operator_name", "")
+        parsed_op = operator_data.split(" - ")
+        operator_name = parsed_op[0] if len(parsed_op) > 0 else ""
+        employee_id = parsed_op[1] if len(parsed_op) > 1 else ""
         
-        # কোয়ান্টিটি চেকিং
-        qty = request.form.get("qty")
-        qty = int(qty) if qty else 0
+        # প্রোডাকশন কোয়ান্টিটি চেক ও কনভার্ট করা
+        raw_qty = request.form.get("qty")
+        production_qty = int(raw_qty) if raw_qty and raw_qty.isdigit() else 0
 
-        # মাস্টার ডাটা প্রসেসিং
-        master_label = request.form.get("master_label")
-        parts_m = master_label.split(" / ")
-        buyer = parts_m[0] if len(parts_m) > 0 else ""
-        style = parts_m[1] if len(parts_m) > 1 else ""
-        color = parts_m[2] if len(parts_m) > 2 else ""
-        item = parts_m[3] if len(parts_m) > 3 else ""
+        # মাস্টার লেবেল থেকে বায়ার, স্টাইল, কালার এবং আইটেম আলাদা করা
+        master_label = request.form.get("master_label", "")
+        parsed_master = master_label.split(" / ")
+        buyer = parsed_master[0] if len(parsed_master) > 0 else ""
+        style = parsed_master[1] if len(parsed_master) > 1 else ""
+        color = parsed_master[2] if len(parsed_master) > 2 else ""
+        item = parsed_master[3] if len(parsed_master) > 3 else ""
 
-        # প্রসেস নেম তুলে আনা
-        cur.execute("SELECT process_name FROM processes WHERE id=%s", (process_id,))
-        p_row = cur.fetchone()
-        process_name = p_row["process_name"] if p_row else ""
+        # আইডি অনুযায়ী অফিসিয়াল প্রসেস নাম খুঁজে বের করা
+        cursor.execute("SELECT process_name FROM processes WHERE id = %s", (process_id,))
+        process_row = cursor.fetchone()
+        process_name = process_row["process_name"] if process_row else ""
 
-        created_by = session.get("uid")
+        user_uid = session.get("uid")
 
-        # ডাটাবেসে ইনসার্ট (auto_hour ব্যবহার করা হয়েছে)
-        cur.execute("""
-            INSERT INTO production_entries
-            (entry_date, hour_label, section, buyer_name, style_name, color_name, item_name,
-            process_name, operator_name, operator_id, production_qty, created_by)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        # ডাটাবেসে ফাইনাল এন্ট্রি ইনসার্ট করা
+        cursor.execute("""
+            INSERT INTO production_entries (
+                entry_date, hour_label, section, buyer_name, style_name, 
+                color_name, item_name, process_name, operator_name, 
+                operator_id, production_qty, created_by
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """, (
-            entry_date, auto_hour, section, buyer, style, color, item,
-            process_name, operator, emp_no, qty, created_by
+            entry_date, current_hour_label, section, buyer, style, 
+            color, item, process_name, operator_name, employee_id, 
+            production_qty, user_uid
         ))
 
-        conn.commit()
+        connection.commit()
         return redirect("/entry")
 
-    # ডাটাবেস কানেকশন ক্লোজ করা
-    cur.close()
-    conn.close()
-
-    today = date.today()
+    # কানেকশন ক্লোজ করা (GET রিকোয়েস্টের জন্য)
+    cursor.close()
+    connection.close()
 
     return render_template(
         "entry.html",
@@ -269,9 +277,9 @@ def entry():
         processes=processes,
         operators=operators,
         master_rows=master_rows,
-        today=today,
-        auto_shift=auto_shift,
-        auto_hour=auto_hour
+        today=date.today(),
+        auto_shift=current_shift,
+        auto_hour=current_hour_label
     )
 @app.route("/get_processes/<section>")
 @login_required
