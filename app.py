@@ -168,8 +168,15 @@ def entry():
     cursor.execute("SELECT operator_name, operator_id FROM operators WHERE is_active = 1")
     operators = cursor.fetchall()
 
-    cursor.execute("SELECT buyer || ' / ' || style || ' / ' || color || ' / ' || item AS label FROM master_data WHERE is_active = 1")
-    master_rows = cursor.fetchall()
+    # dropdown label fetching
+        cur.execute("""
+            SELECT DISTINCT 
+                   buyer || ' / ' || style || ' / ' || color || ' / ' || item AS label
+            FROM master_data
+            WHERE is_active = 1
+            ORDER BY label
+    """)
+    master_rows = cur.fetchall()
 
     cursor.close()
     connection.close()
