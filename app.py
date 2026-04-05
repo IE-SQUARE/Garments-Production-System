@@ -8,6 +8,7 @@ import qrcode
 import os
 import pandas as pd
 from io import BytesIO
+import pytz
 
 app = Flask(__name__)
 app.secret_key = "abc123xyz789_secure"
