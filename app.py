@@ -1183,6 +1183,48 @@ def bulk_import_operator():
     
     return "Invalid file format. Please upload a .csv file.", 400
 
+@app.route('/user_access', methods=['GET', 'POST'])
+@login_required
+def user_access():
+    # শুধু অ্যাডমিন এই পেজে ঢুকতে পারবে (আপনার রোল সিস্টেম অনুযায়ী এটি চেক করুন)
+    if session.get('role') != 'admin':
+        return "Access Denied", 403
+
+    conn = db()
+    cur = conn.cursor()
+    
+    # সার্চের জন্য সব অপারেটর/ইউজার আইডি নিয়ে আসা
+    cur.execute("SELECT operator_id, operator_name FROM operators ORDER BY operator_name ASC")
+    all_users = cur.fetchall()
+
+    selected_user = request.args.get('user_id')
+    user_permissions = []
+
+    if selected_user:
+        # ওই ইউজারের বর্তমান পারমিশনগুলো ডাটাবেস থেকে চেক করা
+        cur.execute("SELECT menu_name FROM user_permissions WHERE user_id = %s", (selected_user,))
+        user_permissions = [row[0] for row in cur.fetchall()]
+
+    if request.method == 'POST':
+        u_id = request.form.get('user_id')
+        selected_menus = request.form.getlist('menus')
+        
+        try:
+            # আগের পারমিশন মুছে নতুনগুলো সেভ করা
+            cur.execute("DELETE FROM user_permissions WHERE user_id = %s", (u_id,))
+            for menu in selected_menus:
+                cur.execute("INSERT INTO user_permissions (user_id, menu_name) VALUES (%s, %s)", (u_id, menu))
+            conn.commit()
+            return redirect(f"/user_access?user_id={u_id}")
+        except Exception as e:
+            conn.rollback()
+            return f"Error: {str(e)}"
+        finally:
+            cur.close()
+            conn.close()
+
+    return render_template('user_access.html', users=all_users, selected_user=selected_user, user_permissions=user_permissions)
+
 if __name__ == "__main__":
 
     app.run(
