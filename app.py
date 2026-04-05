@@ -30,8 +30,6 @@ def db():
     DATABASE_URL = os.environ.get('DATABASE_URL')
     return psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
 
-import pytz # ফাইলের একদম ওপরে ইম্পোর্ট সেকশনে এটি যোগ করবেন
-
 # =========================
 # PRODUCTION INFO (SHIFT & AUTO HOUR)
 # =========================
