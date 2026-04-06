@@ -653,11 +653,12 @@ def operator_status():
     conn = db()
     cur = conn.cursor()
 
+    # আপডেট করা কোয়েরি: এখানে t.target_qty যোগ করা হয়েছে এবং JOIN দেওয়া হয়েছে
     query = """
     SELECT
         o.operator_name,
         p.operator_id AS emp_no,
-
+        t.target_qty AS hourly_target, -- নতুন কলাম যা টার্গেট টেবিল থেকে আসবে
         SUM(CASE WHEN hour_label='1st' THEN production_qty ELSE 0 END) AS h1,
         SUM(CASE WHEN hour_label='2nd' THEN production_qty ELSE 0 END) AS h2,
         SUM(CASE WHEN hour_label='3rd' THEN production_qty ELSE 0 END) AS h3,
@@ -669,13 +670,13 @@ def operator_status():
         SUM(CASE WHEN hour_label='9th' THEN production_qty ELSE 0 END) AS h9,
         SUM(CASE WHEN hour_label='10th' THEN production_qty ELSE 0 END) AS h10,
         SUM(CASE WHEN hour_label='11th' THEN production_qty ELSE 0 END) AS h11,
-
         SUM(production_qty) AS total
-
-FROM production_entries p
-LEFT JOIN operators o ON p.operator_id = o.operator_id
-WHERE 1=1
-"""
+    FROM production_entries p
+    LEFT JOIN operators o ON p.operator_id = o.operator_id
+    -- প্রসেসের নাম অনুযায়ী টার্গেট টেবিল জয়েন করা হয়েছে
+    LEFT JOIN hourly_targets t ON p.process_name = t.process_name 
+    WHERE 1=1
+    """
 
     params = []
 
@@ -690,14 +691,11 @@ WHERE 1=1
     # shift filter
     if shift == "DAY":
         query += " AND hour_label IN ('1st','2nd','3rd','4th','5th','6th')"
-
     elif shift == "NIGHT":
         query += " AND hour_label IN ('7th','8th','9th','10th','11th')"
 
-    query += " GROUP BY o.operator_name, p.operator_id ORDER BY o.operator_name"
-
-    print("QUERY:", query)
-    print("PARAMS:", params)
+    # GROUP BY-তে t.target_qty যোগ করতে হবে নাহলে এরর দিবে
+    query += " GROUP BY o.operator_name, p.operator_id, t.target_qty ORDER BY o.operator_name"
 
     cur.execute(query, params)
     rows = cur.fetchall()
@@ -705,8 +703,7 @@ WHERE 1=1
     cur.close()
     conn.close()
 
-    return render_template("operator_status.html", rows=rows,date=date)
-# =========================
+    return render_template("operator_status.html", rows=rows, date=date)
 # OPERATOR MANAGEMENT
 # =========================
 
