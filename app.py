@@ -673,8 +673,7 @@ def operator_status():
         SUM(production_qty) AS total
     FROM production_entries p
     LEFT JOIN operators o ON p.operator_id = o.operator_id
-    -- নিচে p.section ব্যবহার করেছি কারণ আপনার ফর্মে section দিয়ে ডাটা ঢোকে
-    LEFT JOIN hourly_targets t ON p.section = t.process_name 
+    LEFT JOIN hourly_targets t ON p.section = t.section_name 
     WHERE 1=1
     """
     params = []
