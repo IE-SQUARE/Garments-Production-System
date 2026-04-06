@@ -3,7 +3,7 @@
 {% block content %}
 
 <style>
-/* রেসপন্সিভ কন্টেইনার যাতে মোবাইলে টেবিল স্ক্রল করা যায় */
+/* কন্টেইনার যাতে মোবাইলে টেবিলটি ভেঙে না যায় */
 .table-container {
     width: 100%;
     overflow-x: auto;
@@ -22,7 +22,6 @@
     z-index: 1000;
 }
 
-/* মোবাইলের জন্য পপআপ অ্যাডজাস্টমেন্ট */
 @media (max-width: 768px) {
     .popup-overlay { left: 0; width: 100%; }
 }
@@ -35,18 +34,17 @@
     max-height: 80vh;
     overflow: auto;
     border-radius: 6px;
-    box-shadow: 0 0 10px rgba(0,0,0,0.3);
 }
 
 table {
     width: 100%;
     border-collapse: collapse;
-    min-width: 1000px; /* টেবিল যেন খুব বেশি চেপে না যায় */
+    min-width: 1100px; /* কলাম বেশি হওয়ায় একটু বাড়িয়ে দিলাম */
 }
 
 th, td {
     border: 1px solid #ddd;
-    padding: 6px 4px;
+    padding: 8px 4px;
     text-align: center;
     font-size: 13px;
 }
@@ -54,15 +52,16 @@ th, td {
 th {
     background: #1a4d7c;
     color: white;
+    font-weight: bold;
 }
 
 /* কলাম উইডথ সেটিংস */
-.col-sl { width: 35px; }
-.col-name { width: 180px; text-align: left; padding-left: 8px; }
-.col-id { width: 90px; }
-.col-target { width: 80px; background-color: #fff9c4; color: #333; font-weight: bold; }
-.col-hour { width: 50px; }
-.col-total { width: 80px; font-weight: bold; background-color: #f8f9fa; }
+.col-sl { width: 40px; }
+.col-name { width: 180px; text-align: left; padding-left: 10px; }
+.col-id { width: 100px; }
+.col-target { width: 90px; } /* টার্গেট কলামের উইডথ */
+.col-hour { width: 55px; }
+.col-total { width: 85px; font-weight: bold; background-color: #f1f1f1; }
 
 </style>
 
@@ -89,7 +88,7 @@ th {
         <option value="3D">3D</option>
     </select>
 
-    <button type="submit" style="background: #1a4d7c; color: white; border: none; padding: 5px 15px; cursor: pointer; border-radius: 4px;">Search</button>
+    <button type="submit" style="background: #1a4d7c; color: white; border: none; padding: 6px 20px; cursor: pointer; border-radius: 4px;">Search</button>
 </form>
 
 <div class="table-container">
@@ -99,7 +98,7 @@ th {
                 <th class="col-sl">SL</th>
                 <th class="col-name">EMP NAME</th>
                 <th class="col-id">EMP ID</th>
-                <th class="col-target">Hourly Target</th> <th class="col-hour">1st</th>
+                <th>Hourly Target</th> <th class="col-hour">1st</th>
                 <th class="col-hour">2nd</th>
                 <th class="col-hour">3rd</th>
                 <th class="col-hour">4th</th>
@@ -121,7 +120,21 @@ th {
                     <a href="#" onclick="openOperatorDetail('{{ r[1] }}'); return false;" style="color: #1a4d7c; font-weight: bold; text-decoration: none;">
                         {{ r[1] }} </a>
                 </td>
-                <td style="color: #d32f2f; font-weight: bold;">{{ r[2] if r[2] else 0 }}</td> <td>{{ r[3] }}</td> <td>{{ r[4] }}</td> <td>{{ r[5] }}</td> <td>{{ r[6] }}</td> <td>{{ r[7] }}</td> <td>{{ r[8] }}</td> <td>{{ r[9] }}</td> <td>{{ r[10] }}</td> <td>{{ r[11] }}</td> <td>{{ r[12] }}</td> <td>{{ r[13] }}</td> <td class="col-total">{{ r[14] }}</td> </tr>
+                <td>{{ r[2] if r[2] else 0 }}</td> 
+                
+                <td>{{ r[3] }}</td>
+                <td>{{ r[4] }}</td>
+                <td>{{ r[5] }}</td>
+                <td>{{ r[6] }}</td>
+                <td>{{ r[7] }}</td>
+                <td>{{ r[8] }}</td>
+                <td>{{ r[9] }}</td>
+                <td>{{ r[10] }}</td>
+                <td>{{ r[11] }}</td>
+                <td>{{ r[12] }}</td>
+                <td>{{ r[13] }}</td>
+                <td class="col-total">{{ r[14] }}</td>
+            </tr>
             {% endfor %}
         </tbody>
     </table>
