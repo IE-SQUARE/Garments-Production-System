@@ -658,7 +658,7 @@ def operator_status():
     SELECT
         o.operator_name,
         p.operator_id AS emp_no,
-        t.target_qty AS hourly_target, -- নতুন কলাম যা টার্গেট টেবিল থেকে আসবে
+        COALESCE(t.target_qty, 0) AS hourly_target,
         SUM(CASE WHEN hour_label='1st' THEN production_qty ELSE 0 END) AS h1,
         SUM(CASE WHEN hour_label='2nd' THEN production_qty ELSE 0 END) AS h2,
         SUM(CASE WHEN hour_label='3rd' THEN production_qty ELSE 0 END) AS h3,
@@ -673,11 +673,10 @@ def operator_status():
         SUM(production_qty) AS total
     FROM production_entries p
     LEFT JOIN operators o ON p.operator_id = o.operator_id
-    -- প্রসেসের নাম অনুযায়ী টার্গেট টেবিল জয়েন করা হয়েছে
-    LEFT JOIN hourly_targets t ON p.process_name = t.process_name 
+    -- নিচে p.section ব্যবহার করেছি কারণ আপনার ফর্মে section দিয়ে ডাটা ঢোকে
+    LEFT JOIN hourly_targets t ON p.section = t.process_name 
     WHERE 1=1
     """
-
     params = []
 
     if date:
