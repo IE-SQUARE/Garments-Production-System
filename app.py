@@ -1183,25 +1183,11 @@ def user_access():
 def set_hourly_target():
     conn = db()
     cur = conn.cursor()
+    # ... (Onno code thik thakbe) ...
 
-    if request.method == "POST":
-        section = request.form.get("section")
-        target = request.form.get("target")
-
-        if section and target:
-            # যদি আগে থেকে সেকশন থাকে তবে আপডেট করবে, না থাকলে নতুন ইনসার্ট করবে
-            cur.execute("""
-                INSERT INTO hourly_targets (section_name, target_qty)
-                VALUES (%s, %s)
-                ON CONFLICT (section_name) 
-                DO UPDATE SET target_qty = EXCLUDED.target_qty, updated_at = CURRENT_TIMESTAMP
-            """, (section, target))
-            conn.commit()
-            return redirect("/set_hourly_target")
-
-    # ড্রপডাউনের জন্য সেকশন লিস্ট এবং নিচের টেবিলের জন্য ডাটা আনা
+    # Shudhu 'section' name gulo nite hobe, pura object noy
     cur.execute("SELECT DISTINCT section FROM processes WHERE is_active = 1")
-    sections = cur.fetchall()
+    sections = [row['section'] for row in cur.fetchall()] 
 
     cur.execute("SELECT * FROM hourly_targets ORDER BY section_name")
     targets = cur.fetchall()
@@ -1215,6 +1201,7 @@ def set_hourly_target():
 def get_processes_for_target(section):
     conn = db()
     cur = conn.cursor()
+    # Ekhane 'section' column-er upor base kore process fetch kora hocche
     cur.execute("""
         SELECT DISTINCT process_name 
         FROM processes 
@@ -1224,12 +1211,9 @@ def get_processes_for_target(section):
     rows = cur.fetchall()
     cur.close()
     conn.close()
+    # Database theke pawa data-ke JSON format-e pathate hobe
     return jsonify([r['process_name'] for r in rows])
 
+# Eta file-er ekbare niche thakbe, kono space ba tab chara
 if __name__ == "__main__":
-
-    app.run(
-        host="0.0.0.0",
-        port=5000,
-        debug=True
-    )
+    app.run(host="0.0.0.0", port=5000, debug=True)
