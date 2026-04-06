@@ -1185,70 +1185,63 @@ def set_hourly_target():
     cur = conn.cursor()
 
     if request.method == "POST":
-        style_label = request.form.get("style_label") # বায়ার/স্টাইল/কালার/আইটেম
+        style_label = request.form.get("style_label") 
         section = request.form.get("section")
         process = request.form.get("process")
         target = request.form.get("target")
 
         if style_label and section and process and target:
-            # লেবেল থেকে ডাটা আলাদা করা
             parts = style_label.split(" / ")
-            buyer, style, color, item = parts[0], parts[1], parts[2], parts[3]
+            if len(parts) == 4:
+                buyer, style, color, item = parts[0], parts[1], parts[2], parts[3]
 
-            # টেবিল আপডেট বা ইনসার্ট (বায়ার ও স্টাইল অনুযায়ী)
-            cur.execute("""
-                INSERT INTO hourly_targets (buyer, style, color, item, section_name, process_name, target_qty)
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
-                ON CONFLICT (buyer, style, color, item, section_name, process_name) 
-                DO UPDATE SET target_qty = EXCLUDED.target_qty, updated_at = CURRENT_TIMESTAMP
-            """, (buyer, style, color, item, section, process, target))
-            conn.commit()
+                cur.execute("""
+                    INSERT INTO hourly_targets (buyer, style, color, item, section_name, process_name, target_qty)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                    ON CONFLICT (buyer, style, color, item, section_name, process_name) 
+                    DO UPDATE SET target_qty = EXCLUDED.target_qty, updated_at = CURRENT_TIMESTAMP
+                """, (buyer, style, color, item, section, process, target))
+                conn.commit()
             return redirect("/set_hourly_target")
 
-    # বায়ার/স্টাইল ড্রপডাউনের জন্য ডাটা (আপনার এন্ট্রি ফর্মের মতো)
+    # সমাধান ১: স্টাইল ড্রপডাউন (RealDictRow সমস্যা দূর করতে)
     cur.execute("""
-        SELECT CONCAT(buyer, ' / ', style, ' / ', color, ' / ', item) AS label
-        FROM master_data
-        WHERE is_active = 1
-        ORDER BY buyer, style
+        SELECT buyer || ' / ' || style || ' / ' || color || ' / ' || item AS label
+        FROM master_data WHERE is_active = 1 ORDER BY buyer, style
     """)
-    master_rows = cur.fetchall()
+    # fetchall() এর পর list comprehension ব্যবহার করে শুধু টেক্সট বের করে আনা
+    master_rows = [row['label'] for row in cur.fetchall()]
 
-    # সেকশন ড্রপডাউন
-    cur.execute("SELECT DISTINCT section FROM processes WHERE is_active = 1")
-    rows = cur.fetchall()
-    # ডিকশনারি থেকে শুধুমাত্র ভ্যালু নিয়ে একটি লিস্ট তৈরি করুন
-    sections = [row['section'] for row in rows]
+    # সমাধান ২: সেকশন ড্রপডাউন
+    cur.execute("SELECT DISTINCT section FROM processes WHERE is_active = 1 ORDER BY section")
+    # এখানেও একই ভাবে ডাটা ক্লিন করা হয়েছে
+    sections = [row['section'] for row in cur.fetchall()]
 
-    # নিচের টেবিলের জন্য লিস্ট (সবশেষ টার্গেটগুলো দেখার জন্য)
+    # টেবিলের ডাটা (এটি ডিকশনারি থাকলেও সমস্যা নেই কারণ Jinja2 তে key দিয়ে কল করা যায়)
     cur.execute("SELECT * FROM hourly_targets ORDER BY id DESC LIMIT 20")
     targets = cur.fetchall()
 
     cur.close()
     conn.close()
-    return render_template("set_target.html", 
-                           master_rows=master_rows, 
-                           sections=sections, 
-                           targets=targets)
-
+    return render_template("set_target.html", master_rows=master_rows, sections=sections, targets=targets)
 @app.route("/get_processes_for_target/<section>")
 @login_required
 def get_processes_for_target(section):
     conn = db()
     cur = conn.cursor()
-    # Ekhane 'section' column-er upor base kore process fetch kora hocche
+    
     cur.execute("""
         SELECT DISTINCT process_name 
         FROM processes 
         WHERE section = %s AND is_active = 1 
         ORDER BY process_name
     """, (section,))
+    
     rows = cur.fetchall()
     cur.close()
     conn.close()
-    # Database theke pawa data-ke JSON format-e pathate hobe
-    return jsonify([r['process_name'] for r in rows])
-
-# Eta file-er ekbare niche thakbe, kono space ba tab chara
+    
+    # 🔥 খুবই গুরুত্বপূর্ণ: শুধুমাত্র নামের লিস্ট রিটার্ন করতে হবে
+    return jsonify([row['process_name'] for row in rows])
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
