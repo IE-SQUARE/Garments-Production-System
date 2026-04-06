@@ -1212,6 +1212,24 @@ def set_hourly_target():
 
 if __name__ == "__main__":
 
+@app.route("/get_processes_for_target/<section>")
+@login_required
+def get_processes_for_target(section):
+    conn = db()
+    cur = conn.cursor()
+    # তোমার existing 'processes' টেবিল থেকেই ডাটা নিচ্ছে
+    cur.execute("""
+        SELECT DISTINCT process_name 
+        FROM processes 
+        WHERE section = %s AND is_active = 1 
+        ORDER BY process_name
+    """, (section,))
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+    # শুধু নামের লিস্ট পাঠাবে
+    return jsonify([r['process_name'] for r in rows])
+
     app.run(
         host="0.0.0.0",
         port=5000,
