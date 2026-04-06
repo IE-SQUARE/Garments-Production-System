@@ -1216,7 +1216,9 @@ def set_hourly_target():
 
     # সেকশন ড্রপডাউন
     cur.execute("SELECT DISTINCT section FROM processes WHERE is_active = 1")
-    sections = cur.fetchall()
+    rows = cur.fetchall()
+    # ডিকশনারি থেকে শুধুমাত্র ভ্যালু নিয়ে একটি লিস্ট তৈরি করুন
+    sections = [row['section'] for row in rows]
 
     # নিচের টেবিলের জন্য লিস্ট (সবশেষ টার্গেটগুলো দেখার জন্য)
     cur.execute("SELECT * FROM hourly_targets ORDER BY id DESC LIMIT 20")
