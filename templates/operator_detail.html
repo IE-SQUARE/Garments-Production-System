@@ -1,121 +1,115 @@
 <style>
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+    }
 
-table{
-width:100%;
-border-collapse:collapse;
-font-size:13px;
-}
+    th, td {
+        padding: 6px;
+        border: 1px solid #ccc;
+        text-align: center;
+    }
 
-th,td{
-padding:6px;
-border:1px solid #ccc;
-text-align:center;
-}
-/* Buyer column boro */
-th:nth-child(1),
-td:nth-child(1){
-width:120px;
-}
+    /* Buyer & Style columns */
+    th:nth-child(1), td:nth-child(1),
+    th:nth-child(2), td:nth-child(2) {
+        width: 120px;
+    }
 
-/* Style */
-th:nth-child(2),
-td:nth-child(2){
-width:120px;
-}
+    /* Color */
+    th:nth-child(3), td:nth-child(3) {
+        width: 100px;
+    }
 
-/* Color */
-th:nth-child(3),
-td:nth-child(3){
-width:100px;
-}
+    /* Item */
+    th:nth-child(4), td:nth-child(4) {
+        width: 40px;
+    }
 
-/* Item choto */
-th:nth-child(4),
-td:nth-child(4){
-width:40px;
-}
+    /* Process */
+    th:nth-child(5), td:nth-child(5) {
+        width: 120px;
+    }
 
-/* Process */
-th:nth-child(5),
-td:nth-child(5){
-width:120px;
-}
+    /* Target Column */
+    th:nth-child(6), td:nth-child(6) {
+        width: 60px;
+        background-color: #fcfcfc;
+    }
 
-/* Hour columns choto */
-th:nth-child(n+6):nth-child(-n+16),
-td:nth-child(n+6):nth-child(-n+16){
-width:30px;
-}
+    /* Hour columns (1st to 11th) - width optimized */
+    th:nth-child(n+7):nth-child(-n+17),
+    td:nth-child(n+7):nth-child(-n+17) {
+        width: 30px;
+    }
 
-/* Total column */
-th:nth-child(17),
-td:nth-child(17){
-width:70px;
-}
+    /* Total column */
+    th:nth-child(18), td:nth-child(18) {
+        width: 70px;
+    }
 
-tr{
-height:32px;
-}
-
+    tr:nth-child(even) { background-color: #f9f9f9; }
+    tr:hover { background-color: #f1f1f1; }
+    
+    b { color: #000; }
 </style>
 
 <h2>Operator Production Detail</h2>
 
-<p>
-Operator ID : {{ emp_id }} <br>
-Date : {{ date }}
-</p>
+<div style="margin-bottom: 15px;">
+    <strong>Operator ID :</strong> {{ emp_id }} <br>
+    <strong>Date :</strong> {{ date }}
+</div>
 
-<table border="1">
+<table>
+    <thead>
+        <tr style="background-color: #eee;">
+            <th>Buyer</th>
+            <th>Style</th>
+            <th>Color</th>
+            <th>Item</th>
+            <th>Process Name</th>
+            <th>Hr Target</th>
+            <th>1st</th>
+            <th>2nd</th>
+            <th>3rd</th>
+            <th>4th</th>
+            <th>5th</th>
+            <th>6th</th>
+            <th>7th</th>
+            <th>8th</th>
+            <th>9th</th>
+            <th>10th</th>
+            <th>11th</th>
+            <th>Total</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for r in rows %}
+        <tr>
+            <td>{{ r.buyer_name }}</td>
+            <td>{{ r.style_name }}</td>
+            <td>{{ r.color_name }}</td>
+            <td>{{ r.item_name }}</td>
+            <td>{{ r.process_name }}</td>
+            
+            <td style="background-color: #fffef0; font-weight: bold;">{{ r.hourly_target }}</td>
 
-<tr>
-<th>Buyer</th>
-<th>Style</th>
-<th>Color</th>
-<th>Item</th>
-<th>Process Name</th>
+            <td>{{ r.h1 }}</td>
+            <td>{{ r.h2 }}</td>
+            <td>{{ r.h3 }}</td>
+            <td>{{ r.h4 }}</td>
+            <td>{{ r.h5 }}</td>
+            <td>{{ r.h6 }}</td>
+            <td>{{ r.h7 }}</td>
+            <td>{{ r.h8 }}</td>
+            <td>{{ r.h9 }}</td>
+            <td>{{ r.h10 }}</td>
+            <td>{{ r.h11 }}</td>
 
-<th>1st</th>
-<th>2nd</th>
-<th>3rd</th>
-<th>4th</th>
-<th>5th</th>
-<th>6th</th>
-<th>7th</th>
-<th>8th</th>
-<th>9th</th>
-<th>10th</th>
-<th>11th</th>
-
-<th>Total</th>
-</tr>
-
-{% for r in rows %}
-
-<tr>
-
-<td>{{ r.buyer_name }}</td>
-<td>{{ r.style_name }}</td>
-<td>{{ r.color_name }}</td>
-<td>{{ r.item_name }}</td>
-<td>{{ r.process_name }}</td>
-
-<td>{{ r.h1 }}</td>
-<td>{{ r.h2 }}</td>
-<td>{{ r.h3 }}</td>
-<td>{{ r.h4 }}</td>
-<td>{{ r.h5 }}</td>
-<td>{{ r.h6 }}</td>
-<td>{{ r.h7 }}</td>
-<td>{{ r.h8 }}</td>
-<td>{{ r.h9 }}</td>
-<td>{{ r.h10 }}</td>
-<td>{{ r.h11 }}</td>
-
-<td><b>{{ r.total }}</b></td>
-
-</tr>
-
-{% endfor %}
-
+            <td><b>{{ r.total }}</b></td>
+        </tr>
+        {% endfor %}
+    </tbody>
 </table>
