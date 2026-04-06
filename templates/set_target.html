@@ -1,32 +1,102 @@
-<h2>Set Hourly Target by Section</h2>
+{% extends "base.html" %}
 
-<form method="POST" style="margin-bottom: 30px; background: #f4f4f4; padding: 20px;">
-    <label>Select Section:</label>
-    <select name="section" required>
-        <option value="">-- Choose Section --</option>
-        {% for s in sections %}
-            <option value="{{ s.section }}">{{ s.section }}</option>
-        {% endfor %}
-    </select>
+{% block content %}
+<div class="container-fluid">
+    <h2 style="margin-bottom: 20px; color: #1a4d7c; border-bottom: 2px solid #1a4d7c; padding-bottom: 10px;">
+        Set Hourly Target by Process
+    </h2>
 
-    <label>Hourly Target Qty:</label>
-    <input type="number" name="target" placeholder="Enter Qty" required>
+    <form method="POST" style="margin-bottom: 30px; background: #f4f4f4; padding: 25px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+        <div style="display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-end;">
+            
+            <div style="flex: 1; min-width: 200px;">
+                <label style="font-weight: bold; display: block; margin-bottom: 5px;">Select Section:</label>
+                <select name="section" id="section_select" onchange="loadProcesses()" required style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
+                    <option value="">-- Choose Section --</option>
+                    {% for s in sections %}
+                        {# তোমার কোডে s.section থাকলে s.section দাও, অথবা শুধু s দাও app.py এর ডাটা অনুযায়ী #}
+                        <option value="{{ s }}">{{ s }}</option>
+                    {% endfor %}
+                </select>
+            </div>
 
-    <button type="submit">Save Target</button>
-</form>
+            <div style="flex: 1; min-width: 200px;">
+                <label style="font-weight: bold; display: block; margin-bottom: 5px;">Process Name:</label>
+                <select name="process" id="process_select" required style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
+                    <option value="">-- Select Section First --</option>
+                </select>
+            </div>
 
-<h3>Current Target List</h3>
-<table border="1" style="width: 100%; border-collapse: collapse;">
-    <tr style="background: #eee;">
-        <th>Section Name</th>
-        <th>Hourly Target</th>
-        <th>Last Updated</th>
-    </tr>
-    {% for t in targets %}
-    <tr>
-        <td>{{ t.section_name }}</td>
-        <td>{{ t.target_qty }}</td>
-        <td>{{ t.updated_at.strftime('%Y-%m-%d %H:%M') }}</td>
-    </tr>
-    {% endfor %}
-</table>
+            <div style="width: 150px;">
+                <label style="font-weight: bold; display: block; margin-bottom: 5px;">Hourly Target Qty:</label>
+                <input type="number" name="target" placeholder="Enter Qty" required style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
+            </div>
+
+            <div>
+                <button type="submit" style="padding: 9px 25px; background: #1a4d7c; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
+                    Save Target
+                </button>
+            </div>
+        </div>
+    </form>
+
+    <h3>Current Target Master List</h3>
+    <table border="1" style="width: 100%; border-collapse: collapse; background: white;">
+        <thead>
+            <tr style="background: #1a4d7c; color: white; text-align: left;">
+                <th style="padding: 12px; border: 1px solid #ddd;">Section Name</th>
+                <th style="padding: 12px; border: 1px solid #ddd;">Process Name</th>
+                <th style="padding: 12px; border: 1px solid #ddd;">Hourly Target</th>
+                <th style="padding: 12px; border: 1px solid #ddd;">Last Updated</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for t in targets %}
+            <tr>
+                <td style="padding: 10px; border: 1px solid #ddd;">{{ t.section_name }}</td>
+                <td style="padding: 10px; border: 1px solid #ddd;">{{ t.process_name }}</td>
+                <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">{{ t.target_qty }}</td>
+                <td style="padding: 10px; border: 1px solid #ddd; font-size: 13px; color: #666;">
+                    {{ t.updated_at.strftime('%Y-%m-%d %H:%M') if t.updated_at else '' }}
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="4" style="text-align: center; padding: 20px; color: #888;">No data found</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script>
+function loadProcesses() {
+    var section = document.getElementById("section_select").value;
+    var processSelect = document.getElementById("process_select");
+    
+    // লোডিং অবস্থা
+    processSelect.innerHTML = '<option value="">Loading...</option>';
+
+    if (section) {
+        // app.py এর রুট অনুযায়ী কল করা হচ্ছে
+        fetch('/get_processes_for_target/' + encodeURIComponent(section))
+            .then(response => response.json())
+            .then(data => {
+                processSelect.innerHTML = '<option value="">-- Select Process --</option>';
+                data.forEach(function(p) {
+                    var option = document.createElement("option");
+                    option.value = p;
+                    option.text = p;
+                    processSelect.appendChild(option);
+                });
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                processSelect.innerHTML = '<option value="">Error Loading</option>';
+            });
+    } else {
+        processSelect.innerHTML = '<option value="">-- Select Section First --</option>';
+    }
+}
+</script>
+{% endblock %}
