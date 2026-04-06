@@ -1,121 +1,43 @@
-<style>
+@app.route("/operator_detail")
+@login_required
+def operator_detail():
+    emp_id = request.args.get("emp_id")
+    date_val = request.args.get("date")
+    
+    if not date_val or date_val == "None":
+        date_val = date.today().strftime("%Y-%m-%d")
 
-table{
-width:100%;
-border-collapse:collapse;
-font-size:13px;
-}
+    conn = db()
+    cur = conn.cursor()
 
-th,td{
-padding:6px;
-border:1px solid #ccc;
-text-align:center;
-}
-/* Buyer column boro */
-th:nth-child(1),
-td:nth-child(1){
-width:120px;
-}
+    # এখানে আমরা production_entries এর সাথে hourly_targets জয়েন দিচ্ছি
+    # যাতে বোঝা যায় ওই অপারেটর যে সেকশনে কাজ করছে সেটার টার্গেট কত
+    query = """
+    SELECT
+        p.buyer_name, p.style_name, p.color_name, p.item_name, p.process_name,
+        COALESCE(t.target_qty, 0) AS hourly_target,
+        SUM(CASE WHEN hour_label='1st' THEN production_qty ELSE 0 END) h1,
+        SUM(CASE WHEN hour_label='2nd' THEN production_qty ELSE 0 END) h2,
+        SUM(CASE WHEN hour_label='3rd' THEN production_qty ELSE 0 END) h3,
+        SUM(CASE WHEN hour_label='4th' THEN production_qty ELSE 0 END) h4,
+        SUM(CASE WHEN hour_label='5th' THEN production_qty ELSE 0 END) h5,
+        SUM(CASE WHEN hour_label='6th' THEN production_qty ELSE 0 END) h6,
+        SUM(CASE WHEN hour_label='7th' THEN production_qty ELSE 0 END) h7,
+        SUM(CASE WHEN hour_label='8th' THEN production_qty ELSE 0 END) h8,
+        SUM(CASE WHEN hour_label='9th' THEN production_qty ELSE 0 END) h9,
+        SUM(CASE WHEN hour_label='10th' THEN production_qty ELSE 0 END) h10,
+        SUM(CASE WHEN hour_label='11th' THEN production_qty ELSE 0 END) h11,
+        SUM(production_qty) total
+    FROM production_entries p
+    LEFT JOIN hourly_targets t ON p.section = t.section_name
+    WHERE p.operator_id=%s AND p.entry_date=%s
+    GROUP BY p.buyer_name, p.style_name, p.color_name, p.item_name, p.process_name, t.target_qty
+    ORDER BY p.style_name
+    """
+    
+    cur.execute(query, (emp_id, date_val))
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
 
-/* Style */
-th:nth-child(2),
-td:nth-child(2){
-width:120px;
-}
-
-/* Color */
-th:nth-child(3),
-td:nth-child(3){
-width:100px;
-}
-
-/* Item choto */
-th:nth-child(4),
-td:nth-child(4){
-width:40px;
-}
-
-/* Process */
-th:nth-child(5),
-td:nth-child(5){
-width:120px;
-}
-
-/* Hour columns choto */
-th:nth-child(n+6):nth-child(-n+16),
-td:nth-child(n+6):nth-child(-n+16){
-width:30px;
-}
-
-/* Total column */
-th:nth-child(17),
-td:nth-child(17){
-width:70px;
-}
-
-tr{
-height:32px;
-}
-
-</style>
-
-<h2>Operator Production Detail</h2>
-
-<p>
-Operator ID : {{ emp_id }} <br>
-Date : {{ date }}
-</p>
-
-<table border="1">
-
-<tr>
-<th>Buyer</th>
-<th>Style</th>
-<th>Color</th>
-<th>Item</th>
-<th>Process Name</th>
-
-<th>1st</th>
-<th>2nd</th>
-<th>3rd</th>
-<th>4th</th>
-<th>5th</th>
-<th>6th</th>
-<th>7th</th>
-<th>8th</th>
-<th>9th</th>
-<th>10th</th>
-<th>11th</th>
-
-<th>Total</th>
-</tr>
-
-{% for r in rows %}
-
-<tr>
-
-<td>{{ r.buyer_name }}</td>
-<td>{{ r.style_name }}</td>
-<td>{{ r.color_name }}</td>
-<td>{{ r.item_name }}</td>
-<td>{{ r.process_name }}</td>
-
-<td>{{ r.h1 }}</td>
-<td>{{ r.h2 }}</td>
-<td>{{ r.h3 }}</td>
-<td>{{ r.h4 }}</td>
-<td>{{ r.h5 }}</td>
-<td>{{ r.h6 }}</td>
-<td>{{ r.h7 }}</td>
-<td>{{ r.h8 }}</td>
-<td>{{ r.h9 }}</td>
-<td>{{ r.h10 }}</td>
-<td>{{ r.h11 }}</td>
-
-<td><b>{{ r.total }}</b></td>
-
-</tr>
-
-{% endfor %}
-
-</table>
+    return render_template("operator_detail.html", rows=rows, emp_id=emp_id, date=date_val)
