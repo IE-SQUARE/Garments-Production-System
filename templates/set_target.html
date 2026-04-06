@@ -1,0 +1,32 @@
+<h2>Set Hourly Target by Section</h2>
+
+<form method="POST" style="margin-bottom: 30px; background: #f4f4f4; padding: 20px;">
+    <label>Select Section:</label>
+    <select name="section" required>
+        <option value="">-- Choose Section --</option>
+        {% for s in sections %}
+            <option value="{{ s.section }}">{{ s.section }}</option>
+        {% endfor %}
+    </select>
+
+    <label>Hourly Target Qty:</label>
+    <input type="number" name="target" placeholder="Enter Qty" required>
+
+    <button type="submit">Save Target</button>
+</form>
+
+<h3>Current Target List</h3>
+<table border="1" style="width: 100%; border-collapse: collapse;">
+    <tr style="background: #eee;">
+        <th>Section Name</th>
+        <th>Hourly Target</th>
+        <th>Last Updated</th>
+    </tr>
+    {% for t in targets %}
+    <tr>
+        <td>{{ t.section_name }}</td>
+        <td>{{ t.target_qty }}</td>
+        <td>{{ t.updated_at.strftime('%Y-%m-%d %H:%M') }}</td>
+    </tr>
+    {% endfor %}
+</table>
