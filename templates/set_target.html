@@ -3,33 +3,42 @@
 {% block content %}
 <div class="container-fluid">
     <h2 style="margin-bottom: 20px; color: #1a4d7c; border-bottom: 2px solid #1a4d7c; padding-bottom: 10px;">
-        Set Hourly Target by Process
+        Set Hourly Target (Style & Process Wise)
     </h2>
 
     <form method="POST" style="margin-bottom: 30px; background: #f4f4f4; padding: 25px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
-        <div style="display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-end;">
+        <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: flex-end;">
             
-            <div style="flex: 1; min-width: 200px;">
+            <div style="flex: 2; min-width: 300px;">
+                <label style="font-weight: bold; display: block; margin-bottom: 5px;">Search Style (Buyer/Style/Color/Item):</label>
+                <select name="style_label" id="style_search" required style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
+                    <option value="">-- Search & Select Style --</option>
+                    {% for m in master_rows %}
+                        <option value="{{ m }}">{{ m }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div style="flex: 1; min-width: 180px;">
                 <label style="font-weight: bold; display: block; margin-bottom: 5px;">Select Section:</label>
                 <select name="section" id="section_select" onchange="loadProcesses()" required style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
-                    <option value="">-- Choose Section --</option>
+                    <option value="">-- Section --</option>
                     {% for s in sections %}
-                        {# তোমার কোডে s.section থাকলে s.section দাও, অথবা শুধু s দাও app.py এর ডাটা অনুযায়ী #}
                         <option value="{{ s }}">{{ s }}</option>
                     {% endfor %}
                 </select>
             </div>
 
-            <div style="flex: 1; min-width: 200px;">
+            <div style="flex: 1; min-width: 180px;">
                 <label style="font-weight: bold; display: block; margin-bottom: 5px;">Process Name:</label>
                 <select name="process" id="process_select" required style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
                     <option value="">-- Select Section First --</option>
                 </select>
             </div>
 
-            <div style="width: 150px;">
-                <label style="font-weight: bold; display: block; margin-bottom: 5px;">Hourly Target Qty:</label>
-                <input type="number" name="target" placeholder="Enter Qty" required style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
+            <div style="width: 120px;">
+                <label style="font-weight: bold; display: block; margin-bottom: 5px;">Target Qty:</label>
+                <input type="number" name="target" placeholder="Qty" required style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
             </div>
 
             <div>
@@ -40,29 +49,25 @@
         </div>
     </form>
 
-    <h3>Current Target Master List</h3>
+    <h3>Current Target List</h3>
     <table border="1" style="width: 100%; border-collapse: collapse; background: white;">
         <thead>
             <tr style="background: #1a4d7c; color: white; text-align: left;">
-                <th style="padding: 12px; border: 1px solid #ddd;">Section Name</th>
-                <th style="padding: 12px; border: 1px solid #ddd;">Process Name</th>
-                <th style="padding: 12px; border: 1px solid #ddd;">Hourly Target</th>
-                <th style="padding: 12px; border: 1px solid #ddd;">Last Updated</th>
+                <th style="padding: 12px; border: 1px solid #ddd;">Style Details</th>
+                <th style="padding: 12px; border: 1px solid #ddd;">Section</th>
+                <th style="padding: 12px; border: 1px solid #ddd;">Process</th>
+                <th style="padding: 12px; border: 1px solid #ddd;">Target</th>
+                <th style="padding: 12px; border: 1px solid #ddd;">Updated At</th>
             </tr>
         </thead>
         <tbody>
             {% for t in targets %}
             <tr>
+                <td style="padding: 10px; border: 1px solid #ddd;">{{ t.buyer }} / {{ t.style }}</td>
                 <td style="padding: 10px; border: 1px solid #ddd;">{{ t.section_name }}</td>
                 <td style="padding: 10px; border: 1px solid #ddd;">{{ t.process_name }}</td>
-                <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">{{ t.target_qty }}</td>
-                <td style="padding: 10px; border: 1px solid #ddd; font-size: 13px; color: #666;">
-                    {{ t.updated_at.strftime('%Y-%m-%d %H:%M') if t.updated_at else '' }}
-                </td>
-            </tr>
-            {% else %}
-            <tr>
-                <td colspan="4" style="text-align: center; padding: 20px; color: #888;">No data found</td>
+                <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold; color: blue;">{{ t.target_qty }}</td>
+                <td style="padding: 10px; border: 1px solid #ddd; font-size: 12px;">{{ t.updated_at.strftime('%d-%m %H:%M') if t.updated_at else '' }}</td>
             </tr>
             {% endfor %}
         </tbody>
@@ -73,12 +78,9 @@
 function loadProcesses() {
     var section = document.getElementById("section_select").value;
     var processSelect = document.getElementById("process_select");
-    
-    // লোডিং অবস্থা
     processSelect.innerHTML = '<option value="">Loading...</option>';
 
     if (section) {
-        // app.py এর রুট অনুযায়ী কল করা হচ্ছে
         fetch('/get_processes_for_target/' + encodeURIComponent(section))
             .then(response => response.json())
             .then(data => {
@@ -89,14 +91,11 @@ function loadProcesses() {
                     option.text = p;
                     processSelect.appendChild(option);
                 });
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                processSelect.innerHTML = '<option value="">Error Loading</option>';
             });
     } else {
         processSelect.innerHTML = '<option value="">-- Select Section First --</option>';
     }
 }
 </script>
+
 {% endblock %}
