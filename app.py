@@ -645,20 +645,17 @@ def batch_info(batch_no):
 @app.route("/operator_status")
 @login_required
 def operator_status():
-
-    date = request.args.get("date")
+    date_val = request.args.get("date")
     shift = request.args.get("shift")
     section = request.args.get("section")
 
     conn = db()
     cur = conn.cursor()
 
-    # আপডেট করা কোয়েরি: এখানে t.target_qty যোগ করা হয়েছে এবং JOIN দেওয়া হয়েছে
     query = """
     SELECT
         o.operator_name,
         p.operator_id AS emp_no,
-        COALESCE(t.target_qty, 0) AS hourly_target,
         SUM(CASE WHEN hour_label='1st' THEN production_qty ELSE 0 END) AS h1,
         SUM(CASE WHEN hour_label='2nd' THEN production_qty ELSE 0 END) AS h2,
         SUM(CASE WHEN hour_label='3rd' THEN production_qty ELSE 0 END) AS h3,
@@ -673,35 +670,28 @@ def operator_status():
         SUM(production_qty) AS total
     FROM production_entries p
     LEFT JOIN operators o ON p.operator_id = o.operator_id
-    LEFT JOIN hourly_targets t ON p.section = t.section_name 
     WHERE 1=1
     """
     params = []
-
-    if date:
+    if date_val:
         query += " AND entry_date = %s"
-        params.append(date)
-
+        params.append(date_val)
     if section:
         query += " AND p.section = %s"
         params.append(section)
-
-    # shift filter
     if shift == "DAY":
         query += " AND hour_label IN ('1st','2nd','3rd','4th','5th','6th')"
     elif shift == "NIGHT":
         query += " AND hour_label IN ('7th','8th','9th','10th','11th')"
 
-    # GROUP BY-তে t.target_qty যোগ করতে হবে নাহলে এরর দিবে
-    query += " GROUP BY o.operator_name, p.operator_id, t.target_qty ORDER BY o.operator_name"
-
+    query += " GROUP BY o.operator_name, p.operator_id ORDER BY o.operator_name"
+    
     cur.execute(query, params)
     rows = cur.fetchall()
-
     cur.close()
     conn.close()
 
-    return render_template("operator_status.html", rows=rows, date=date)
+    return render_template("operator_status.html", rows=rows, date=date_val)
 # OPERATOR MANAGEMENT
 # =========================
 
@@ -801,28 +791,21 @@ def edit_operator(oid):
 @app.route("/operator_detail")
 @login_required
 def operator_detail():
-
     emp_id = request.args.get("emp_id")
-    date = request.args.get("date")
-
-    if not date or date == "None":
-        date = datetime.today().strftime("%Y-%m-%d")
-
-    # date empty হলে today use করবে
-    if not date:
-        date = datetime.today().strftime("%Y-%m-%d")
+    date_val = request.args.get("date")
+    
+    if not date_val or date_val == "None":
+        date_val = date.today().strftime("%Y-%m-%d")
 
     conn = db()
     cur = conn.cursor()
 
+    # এখানে আমরা production_entries এর সাথে hourly_targets জয়েন দিচ্ছি
+    # যাতে বোঝা যায় ওই অপারেটর যে সেকশনে কাজ করছে সেটার টার্গেট কত
     query = """
     SELECT
-        buyer_name,
-        style_name,
-        color_name,
-        item_name,
-        process_name,
-
+        p.buyer_name, p.style_name, p.color_name, p.item_name, p.process_name,
+        COALESCE(t.target_qty, 0) AS hourly_target,
         SUM(CASE WHEN hour_label='1st' THEN production_qty ELSE 0 END) h1,
         SUM(CASE WHEN hour_label='2nd' THEN production_qty ELSE 0 END) h2,
         SUM(CASE WHEN hour_label='3rd' THEN production_qty ELSE 0 END) h3,
@@ -834,25 +817,20 @@ def operator_detail():
         SUM(CASE WHEN hour_label='9th' THEN production_qty ELSE 0 END) h9,
         SUM(CASE WHEN hour_label='10th' THEN production_qty ELSE 0 END) h10,
         SUM(CASE WHEN hour_label='11th' THEN production_qty ELSE 0 END) h11,
-
         SUM(production_qty) total
-
-    FROM production_entries
-
-    WHERE operator_id=%s
-    AND entry_date=%s
-
-    GROUP BY buyer_name,style_name,color_name,item_name,process_name
-    ORDER BY style_name
+    FROM production_entries p
+    LEFT JOIN hourly_targets t ON p.section = t.section_name
+    WHERE p.operator_id=%s AND p.entry_date=%s
+    GROUP BY p.buyer_name, p.style_name, p.color_name, p.item_name, p.process_name, t.target_qty
+    ORDER BY p.style_name
     """
-
-    cur.execute(query,(emp_id,date))
+    
+    cur.execute(query, (emp_id, date_val))
     rows = cur.fetchall()
+    cur.close()
+    conn.close()
 
-    return render_template("operator_detail.html",
-                           rows=rows,
-                           emp_id=emp_id,
-                           date=date)
+    return render_template("operator_detail.html", rows=rows, emp_id=emp_id, date=date_val)
 
 @app.route("/master_data", methods=["GET","POST"])
 @login_required
