@@ -1205,6 +1205,22 @@ def user_access():
 
     return render_template('user_access.html', users=all_users, selected_user=selected_user, user_permissions=user_permissions)
 
+@app.route('/add_hourly_target', methods=['GET', 'POST'])
+@login_required
+def add_hourly_target():
+    if request.method == 'POST':
+        section = request.form.get('section_name')
+        process = request.form.get('process_name')
+        target = request.form.get('target_qty')
+        
+        cur = conn.cursor()
+        cur.execute("INSERT INTO hourly_targets (section_name, process_name, target_qty) VALUES (%s, %s, %s)", 
+                    (section, process, target))
+        conn.commit()
+        cur.close()
+        return redirect(url_for('dashboard'))
+    return render_template('add_hourly_target.html')
+
 if __name__ == "__main__":
 
     app.run(
