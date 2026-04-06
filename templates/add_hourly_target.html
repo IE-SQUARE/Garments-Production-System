@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="master-box" style="background: white; padding: 20px; border-radius: 8px;">
+    <h3>Add Hourly Target</h3>
+    <form method="POST">
+        <label>Section:</label><br>
+        <input type="text" name="section_name" placeholder="Ex: Finishing/Dry" required><br><br>
+
+        <label>Process Name:</label><br>
+        <select name="process_name" required>
+            <option value="Laser">Laser</option>
+            <option value="Brushing">Brushing</option>
+            <option value="Scrapping">Scrapping</option>
+        </select><br><br>
+
+        <label>Hourly Target:</label><br>
+        <input type="number" name="target_qty" placeholder="Qty per hour" required><br><br>
+
+        <button type="submit" style="background: #1a4d7c; color: white; width: 100%;">Save Target</button>
+    </form>
+</div>
+{% endblock %}
