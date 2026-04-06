@@ -1178,21 +1178,37 @@ def user_access():
 
     return render_template('user_access.html', users=all_users, selected_user=selected_user, user_permissions=user_permissions)
 
-@app.route('/add_hourly_target', methods=['GET', 'POST'])
+@app.route("/set_hourly_target", methods=["GET", "POST"])
 @login_required
-def add_hourly_target():
-    if request.method == 'POST':
-        section = request.form.get('section_name')
-        process = request.form.get('process_name')
-        target = request.form.get('target_qty')
-        
-        cur = conn.cursor()
-        cur.execute("INSERT INTO hourly_targets (section_name, process_name, target_qty) VALUES (%s, %s, %s)", 
-                    (section, process, target))
-        conn.commit()
-        cur.close()
-        return redirect(url_for('dashboard'))
-    return render_template('add_hourly_target.html')
+def set_hourly_target():
+    conn = db()
+    cur = conn.cursor()
+
+    if request.method == "POST":
+        section = request.form.get("section")
+        target = request.form.get("target")
+
+        if section and target:
+            # যদি আগে থেকে সেকশন থাকে তবে আপডেট করবে, না থাকলে নতুন ইনসার্ট করবে
+            cur.execute("""
+                INSERT INTO hourly_targets (section_name, target_qty)
+                VALUES (%s, %s)
+                ON CONFLICT (section_name) 
+                DO UPDATE SET target_qty = EXCLUDED.target_qty, updated_at = CURRENT_TIMESTAMP
+            """, (section, target))
+            conn.commit()
+            return redirect("/set_hourly_target")
+
+    # ড্রপডাউনের জন্য সেকশন লিস্ট এবং নিচের টেবিলের জন্য ডাটা আনা
+    cur.execute("SELECT DISTINCT section FROM processes WHERE is_active = 1")
+    sections = cur.fetchall()
+
+    cur.execute("SELECT * FROM hourly_targets ORDER BY section_name")
+    targets = cur.fetchall()
+
+    cur.close()
+    conn.close()
+    return render_template("set_target.html", sections=sections, targets=targets)
 
 if __name__ == "__main__":
 
