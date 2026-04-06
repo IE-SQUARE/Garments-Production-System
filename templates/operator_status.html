@@ -1,214 +1,50 @@
-{% extends "base.html" %}
+@app.route("/operator_status")
+@login_required
+def operator_status():
+    date_val = request.args.get("date")
+    shift = request.args.get("shift")
+    section = request.args.get("section")
 
-{% block content %}
+    conn = db()
+    cur = conn.cursor()
 
-<style>
+    query = """
+    SELECT
+        o.operator_name,
+        p.operator_id AS emp_no,
+        SUM(CASE WHEN hour_label='1st' THEN production_qty ELSE 0 END) AS h1,
+        SUM(CASE WHEN hour_label='2nd' THEN production_qty ELSE 0 END) AS h2,
+        SUM(CASE WHEN hour_label='3rd' THEN production_qty ELSE 0 END) AS h3,
+        SUM(CASE WHEN hour_label='4th' THEN production_qty ELSE 0 END) AS h4,
+        SUM(CASE WHEN hour_label='5th' THEN production_qty ELSE 0 END) AS h5,
+        SUM(CASE WHEN hour_label='6th' THEN production_qty ELSE 0 END) AS h6,
+        SUM(CASE WHEN hour_label='7th' THEN production_qty ELSE 0 END) AS h7,
+        SUM(CASE WHEN hour_label='8th' THEN production_qty ELSE 0 END) AS h8,
+        SUM(CASE WHEN hour_label='9th' THEN production_qty ELSE 0 END) AS h9,
+        SUM(CASE WHEN hour_label='10th' THEN production_qty ELSE 0 END) AS h10,
+        SUM(CASE WHEN hour_label='11th' THEN production_qty ELSE 0 END) AS h11,
+        SUM(production_qty) AS total
+    FROM production_entries p
+    LEFT JOIN operators o ON p.operator_id = o.operator_id
+    WHERE 1=1
+    """
+    params = []
+    if date_val:
+        query += " AND entry_date = %s"
+        params.append(date_val)
+    if section:
+        query += " AND p.section = %s"
+        params.append(section)
+    if shift == "DAY":
+        query += " AND hour_label IN ('1st','2nd','3rd','4th','5th','6th')"
+    elif shift == "NIGHT":
+        query += " AND hour_label IN ('7th','8th','9th','10th','11th')"
 
-.popup-overlay{
-display:none;
-position:fixed;
-top:0;
-left:220px;
-width:calc(100% - 220px);
-height:100%;
-background:rgba(0,0,0,0.3);
-justify-content:center;
-align-items:center;
-z-index:1000;
-}
+    query += " GROUP BY o.operator_name, p.operator_id ORDER BY o.operator_name"
+    
+    cur.execute(query, params)
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
 
-.popup-content{
-background:white;
-padding:20px;
-width:1200px;        /* popup width barano */
-max-height:80vh;     /* screen er 80% height */
-overflow:auto;
-border-radius:6px;
-box-shadow:0 0 10px rgba(0,0,0,0.3);
-}
-
-table{
-width:100%;
-border-collapse:collapse;
-}
-
-th,td{
-border:1px solid #ddd;
-padding:4px;
-text-align:center;
-}
-
-th{
-background:#f2f2f2;
-}
-
-/* SL */
-th:nth-child(1),
-td:nth-child(1){
-width:20px;
-}
-
-/* EMP NAME */
-th:nth-child(2),
-td:nth-child(2){
-width:300px;
-}
-
-/* EMP ID */
-th:nth-child(3),
-td:nth-child(3){
-width:110px;
-}
-
-/* Hour columns */
-th:nth-child(n+4):nth-child(-n+14),
-td:nth-child(n+4):nth-child(-n+14){
-width:60px;
-}
-
-/* TOTAL column */
-th:nth-child(15),
-td:nth-child(15){
-width:90px;
-font-weight:bold;
-}
-
-th:nth-child(1){width:25px;}
-th:nth-child(2){width:90px;}
-th:nth-child(3){width:180px;}
-th:nth-child(n+4){width:70px;}
-
-</style>
-
-
-<h2>Operator Status</h2>
-
-<form method="get" style="margin-bottom:20px;">
-
-Date:
-<input type="date" name="date"
-value="{{ request.args.get('date', today) }}">
-
-Shift:
-<select name="shift">
-
-<option value="">All</option>
-
-<option value="DAY"
-{% if request.args.get('shift') == 'DAY' %}selected{% endif %}>
-DAY
-</option>
-
-<option value="NIGHT"
-{% if request.args.get('shift') == 'NIGHT' %}selected{% endif %}>
-NIGHT
-</option>
-
-</select>
-
-Section:
-<select name="section">
-
-<option value="">All Section</option>
-<option value="Whisker">Whisker</option>
-<option value="Brushing">Brushing</option>
-<option value="Laser">Laser</option>
-<option value="Spray">Spray</option>
-<option value="Special Process">Special Process</option>
-<option value="3D">3D</option>
-
-</select>
-
-<button type="submit">Search</button>
-
-</form>
-
-
-<table>
-
-<tr>
-<th>SL</th>
-<th>EMP NAME</th>
-<th>EMP ID</th>
-
-<th>1st</th>
-<th>2nd</th>
-<th>3rd</th>
-<th>4th</th>
-<th>5th</th>
-<th>6th</th>
-<th>7th</th>
-<th>8th</th>
-<th>9th</th>
-<th>10th</th>
-<th>11th</th>
-
-<th>TOTAL</th>
-</tr>
-
-{% for r in rows %}
-<tr>
-
-<td>{{ loop.index }}</td>
-<td>{{ r.operator_name }}</td>
-
-<td>
-<a href="#" onclick="openOperatorDetail('{{ r.emp_no }}'); return false;">
-{{ r.emp_no }}
-</a>
-</td>
-
-<td>{{ r.h1 }}</td>
-<td>{{ r.h2 }}</td>
-<td>{{ r.h3 }}</td>
-<td>{{ r.h4 }}</td>
-<td>{{ r.h5 }}</td>
-<td>{{ r.h6 }}</td>
-<td>{{ r.h7 }}</td>
-<td>{{ r.h8 }}</td>
-<td>{{ r.h9 }}</td>
-<td>{{ r.h10 }}</td>
-<td>{{ r.h11 }}</td>
-
-<td><b>{{ r.total }}</b></td>
-
-</tr>
-{% endfor %}
-
-</table>
-
-
-<div id="popupOverlay" class="popup-overlay">
-<div class="popup-content" id="popupContent"></div>
-</div>
-
-
-<script>
-
-function openOperatorDetail(emp_id){
-
-let date = document.querySelector('input[name="date"]').value
-
-fetch(`/operator_detail?emp_id=${emp_id}&date=${date}`)
-.then(res => res.text())
-.then(html => {
-
-document.getElementById("popupContent").innerHTML = html
-document.getElementById("popupOverlay").style.display = "flex"
-
-})
-
-}
-
-// outside click = close
-document.getElementById("popupOverlay").onclick = function(e){
-
-if(e.target === this){
-this.style.display="none"
-}
-
-}
-
-</script>
-
-{% endblock %}
+    return render_template("operator_status.html", rows=rows, date=date_val)
