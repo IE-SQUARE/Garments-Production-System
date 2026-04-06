@@ -3,163 +3,212 @@
 {% block content %}
 
 <style>
-/* কন্টেইনার যাতে মোবাইলে টেবিলটি ভেঙে না যায় */
-.table-container {
-    width: 100%;
-    overflow-x: auto;
+
+.popup-overlay{
+display:none;
+position:fixed;
+top:0;
+left:220px;
+width:calc(100% - 220px);
+height:100%;
+background:rgba(0,0,0,0.3);
+justify-content:center;
+align-items:center;
+z-index:1000;
 }
 
-.popup-overlay {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 220px;
-    width: calc(100% - 220px);
-    height: 100%;
-    background: rgba(0,0,0,0.3);
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
+.popup-content{
+background:white;
+padding:20px;
+width:1200px;        /* popup width barano */
+max-height:80vh;     /* screen er 80% height */
+overflow:auto;
+border-radius:6px;
+box-shadow:0 0 10px rgba(0,0,0,0.3);
 }
 
-@media (max-width: 768px) {
-    .popup-overlay { left: 0; width: 100%; }
+table{
+width:100%;
+border-collapse:collapse;
 }
 
-.popup-content {
-    background: white;
-    padding: 20px;
-    width: 90%;
-    max-width: 1200px;
-    max-height: 80vh;
-    overflow: auto;
-    border-radius: 6px;
+th,td{
+border:1px solid #ddd;
+padding:4px;
+text-align:center;
 }
 
-table {
-    width: 100%;
-    border-collapse: collapse;
-    min-width: 1100px; /* কলাম বেশি হওয়ায় একটু বাড়িয়ে দিলাম */
+th{
+background:#f2f2f2;
 }
 
-th, td {
-    border: 1px solid #ddd;
-    padding: 8px 4px;
-    text-align: center;
-    font-size: 13px;
+/* SL */
+th:nth-child(1),
+td:nth-child(1){
+width:20px;
 }
 
-th {
-    background: #1a4d7c;
-    color: white;
-    font-weight: bold;
+/* EMP NAME */
+th:nth-child(2),
+td:nth-child(2){
+width:300px;
 }
 
-/* কলাম উইডথ সেটিংস */
-.col-sl { width: 40px; }
-.col-name { width: 180px; text-align: left; padding-left: 10px; }
-.col-id { width: 100px; }
-.col-target { width: 90px; } /* টার্গেট কলামের উইডথ */
-.col-hour { width: 55px; }
-.col-total { width: 85px; font-weight: bold; background-color: #f1f1f1; }
+/* EMP ID */
+th:nth-child(3),
+td:nth-child(3){
+width:110px;
+}
+
+/* Hour columns */
+th:nth-child(n+4):nth-child(-n+14),
+td:nth-child(n+4):nth-child(-n+14){
+width:60px;
+}
+
+/* TOTAL column */
+th:nth-child(15),
+td:nth-child(15){
+width:90px;
+font-weight:bold;
+}
+
+th:nth-child(1){width:25px;}
+th:nth-child(2){width:90px;}
+th:nth-child(3){width:180px;}
+th:nth-child(n+4){width:70px;}
 
 </style>
 
-<h2>Operator Status Report</h2>
 
-<form method="get" style="margin-bottom:20px; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-    Date: <input type="date" name="date" value="{{ request.args.get('date', today) }}">
-    
-    Shift: 
-    <select name="shift">
-        <option value="">All</option>
-        <option value="DAY" {% if request.args.get('shift') == 'DAY' %}selected{% endif %}>DAY</option>
-        <option value="NIGHT" {% if request.args.get('shift') == 'NIGHT' %}selected{% endif %}>NIGHT</option>
-    </select>
+<h2>Operator Status</h2>
 
-    Section: 
-    <select name="section">
-        <option value="">All Section</option>
-        <option value="Whisker">Whisker</option>
-        <option value="Brushing">Brushing</option>
-        <option value="Laser">Laser</option>
-        <option value="Spray">Spray</option>
-        <option value="Special Process">Special Process</option>
-        <option value="3D">3D</option>
-    </select>
+<form method="get" style="margin-bottom:20px;">
 
-    <button type="submit" style="background: #1a4d7c; color: white; border: none; padding: 6px 20px; cursor: pointer; border-radius: 4px;">Search</button>
+Date:
+<input type="date" name="date"
+value="{{ request.args.get('date', today) }}">
+
+Shift:
+<select name="shift">
+
+<option value="">All</option>
+
+<option value="DAY"
+{% if request.args.get('shift') == 'DAY' %}selected{% endif %}>
+DAY
+</option>
+
+<option value="NIGHT"
+{% if request.args.get('shift') == 'NIGHT' %}selected{% endif %}>
+NIGHT
+</option>
+
+</select>
+
+Section:
+<select name="section">
+
+<option value="">All Section</option>
+<option value="Whisker">Whisker</option>
+<option value="Brushing">Brushing</option>
+<option value="Laser">Laser</option>
+<option value="Spray">Spray</option>
+<option value="Special Process">Special Process</option>
+<option value="3D">3D</option>
+
+</select>
+
+<button type="submit">Search</button>
+
 </form>
 
-<div class="table-container">
-    <table>
-        <thead>
-            <tr>
-                <th class="col-sl">SL</th>
-                <th class="col-name">EMP NAME</th>
-                <th class="col-id">EMP ID</th>
-                <th>Hourly Target</th> <th class="col-hour">1st</th>
-                <th class="col-hour">2nd</th>
-                <th class="col-hour">3rd</th>
-                <th class="col-hour">4th</th>
-                <th class="col-hour">5th</th>
-                <th class="col-hour">6th</th>
-                <th class="col-hour">7th</th>
-                <th class="col-hour">8th</th>
-                <th class="col-hour">9th</th>
-                <th class="col-hour">10th</th>
-                <th class="col-hour">11th</th>
-                <th class="col-total">TOTAL</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for r in rows %}
-            <tr>
-                <td>{{ loop.index }}</td>
-                <td class="col-name">{{ r[0] }}</td> <td>
-                    <a href="#" onclick="openOperatorDetail('{{ r[1] }}'); return false;" style="color: #1a4d7c; font-weight: bold; text-decoration: none;">
-                        {{ r[1] }} </a>
-                </td>
-                <td>{{ r[2] if r[2] else 0 }}</td> 
-                
-                <td>{{ r[3] }}</td>
-                <td>{{ r[4] }}</td>
-                <td>{{ r[5] }}</td>
-                <td>{{ r[6] }}</td>
-                <td>{{ r[7] }}</td>
-                <td>{{ r[8] }}</td>
-                <td>{{ r[9] }}</td>
-                <td>{{ r[10] }}</td>
-                <td>{{ r[11] }}</td>
-                <td>{{ r[12] }}</td>
-                <td>{{ r[13] }}</td>
-                <td class="col-total">{{ r[14] }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
+
+<table>
+
+<tr>
+<th>SL</th>
+<th>EMP NAME</th>
+<th>EMP ID</th>
+
+<th>1st</th>
+<th>2nd</th>
+<th>3rd</th>
+<th>4th</th>
+<th>5th</th>
+<th>6th</th>
+<th>7th</th>
+<th>8th</th>
+<th>9th</th>
+<th>10th</th>
+<th>11th</th>
+
+<th>TOTAL</th>
+</tr>
+
+{% for r in rows %}
+<tr>
+
+<td>{{ loop.index }}</td>
+<td>{{ r.operator_name }}</td>
+
+<td>
+<a href="#" onclick="openOperatorDetail('{{ r.emp_no }}'); return false;">
+{{ r.emp_no }}
+</a>
+</td>
+
+<td>{{ r.h1 }}</td>
+<td>{{ r.h2 }}</td>
+<td>{{ r.h3 }}</td>
+<td>{{ r.h4 }}</td>
+<td>{{ r.h5 }}</td>
+<td>{{ r.h6 }}</td>
+<td>{{ r.h7 }}</td>
+<td>{{ r.h8 }}</td>
+<td>{{ r.h9 }}</td>
+<td>{{ r.h10 }}</td>
+<td>{{ r.h11 }}</td>
+
+<td><b>{{ r.total }}</b></td>
+
+</tr>
+{% endfor %}
+
+</table>
+
 
 <div id="popupOverlay" class="popup-overlay">
-    <div class="popup-content" id="popupContent"></div>
+<div class="popup-content" id="popupContent"></div>
 </div>
 
+
 <script>
+
 function openOperatorDetail(emp_id){
-    let date = document.querySelector('input[name="date"]').value
-    fetch(`/operator_detail?emp_id=${emp_id}&date=${date}`)
-    .then(res => res.text())
-    .then(html => {
-        document.getElementById("popupContent").innerHTML = html
-        document.getElementById("popupOverlay").style.display = "flex"
-    })
+
+let date = document.querySelector('input[name="date"]').value
+
+fetch(`/operator_detail?emp_id=${emp_id}&date=${date}`)
+.then(res => res.text())
+.then(html => {
+
+document.getElementById("popupContent").innerHTML = html
+document.getElementById("popupOverlay").style.display = "flex"
+
+})
+
 }
 
+// outside click = close
 document.getElementById("popupOverlay").onclick = function(e){
-    if(e.target === this){
-        this.style.display="none"
-    }
+
+if(e.target === this){
+this.style.display="none"
 }
+
+}
+
 </script>
 
 {% endblock %}
