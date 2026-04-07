@@ -1205,12 +1205,19 @@ def set_hourly_target():
             return redirect("/set_hourly_target")
 
     # সমাধান ১: স্টাইল ড্রপডাউন (RealDictRow সমস্যা দূর করতে)
+    # বায়ার/স্টাইল লিস্টের জন্য
     cur.execute("""
-        SELECT buyer || ' / ' || style || ' / ' || color || ' / ' || item AS label
-        FROM master_data WHERE is_active = 1 ORDER BY buyer, style
+        SELECT buyer || ' / ' || style || ' / ' || color || ' / ' || item AS label 
+        FROM master_data 
+        WHERE is_active = 1
     """)
-    # fetchall() এর পর list comprehension ব্যবহার করে শুধু টেক্সট বের করে আনা
+    # এখানে row['label'] ব্যবহার করে শুধু টেক্সটগুলোকে একটি লিস্টে নিয়ে নিন
     master_rows = [row['label'] for row in cur.fetchall()]
+
+    # সেকশন লিস্টের জন্য
+    cur.execute("SELECT DISTINCT section FROM processes WHERE is_active = 1")
+    # এখানে row['section'] ব্যবহার করুন
+    sections = [row['section'] for row in cur.fetchall()]
 
     # সমাধান ২: সেকশন ড্রপডাউন
     cur.execute("SELECT DISTINCT section FROM processes WHERE is_active = 1 ORDER BY section")
