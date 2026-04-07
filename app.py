@@ -1184,17 +1184,27 @@ def set_hourly_target():
     conn = db()
     cur = conn.cursor()
 
+    # ডাটাবেস টেবিল চেক এবং কলাম যোগ করা (যদি না থাকে)
+    try:
+        cur.execute("ALTER TABLE hourly_targets ADD COLUMN IF NOT EXISTS buyer VARCHAR(255);")
+        cur.execute("ALTER TABLE hourly_targets ADD COLUMN IF NOT EXISTS color VARCHAR(255);")
+        cur.execute("ALTER TABLE hourly_targets ADD COLUMN IF NOT EXISTS item VARCHAR(255);")
+        conn.commit()
+    except:
+        conn.rollback()
+
     if request.method == "POST":
-        style_label = request.form.get("style_label") 
+        style_label = request.form.get("style_label")
         section = request.form.get("section")
         process = request.form.get("process")
         target = request.form.get("target")
 
         if style_label and section and process and target:
-            parts = style_label.split(" / ")
-            if len(parts) == 4:
+            # "Buyer / Style / Color / Item" ফরম্যাট থেকে ডাটা আলাদা করা
+            parts = [p.strip() for p in style_label.split("/")]
+            if len(parts) >= 4:
                 buyer, style, color, item = parts[0], parts[1], parts[2], parts[3]
-
+                
                 cur.execute("""
                     INSERT INTO hourly_targets (buyer, style, color, item, section_name, process_name, target_qty)
                     VALUES (%s, %s, %s, %s, %s, %s, %s)
@@ -1202,30 +1212,18 @@ def set_hourly_target():
                     DO UPDATE SET target_qty = EXCLUDED.target_qty, updated_at = CURRENT_TIMESTAMP
                 """, (buyer, style, color, item, section, process, target))
                 conn.commit()
-            return redirect("/set_hourly_target")
+            return redirect(url_for("set_hourly_target"))
 
-    # সমাধান ১: স্টাইল ড্রপডাউন (RealDictRow সমস্যা দূর করতে)
-    # বায়ার/স্টাইল লিস্টের জন্য
-    cur.execute("""
-        SELECT buyer || ' / ' || style || ' / ' || color || ' / ' || item AS label 
-        FROM master_data 
-        WHERE is_active = 1
-    """)
-    # এখানে row['label'] ব্যবহার করে শুধু টেক্সটগুলোকে একটি লিস্টে নিয়ে নিন
+    # ১. বায়ার/স্টাইল লিস্ট (RealDictRow এর ঝামেলা এড়াতে শুধু স্ট্রিং লিস্ট তৈরি)
+    cur.execute("SELECT buyer || ' / ' || style || ' / ' || color || ' / ' || item AS label FROM master_data WHERE is_active = 1")
     master_rows = [row['label'] for row in cur.fetchall()]
 
-    # সেকশন লিস্টের জন্য
+    # ২. সেকশন লিস্ট (RealDictRow এর বদলে শুধু নাম)
     cur.execute("SELECT DISTINCT section FROM processes WHERE is_active = 1")
-    # এখানে row['section'] ব্যবহার করুন
     sections = [row['section'] for row in cur.fetchall()]
 
-    # সমাধান ২: সেকশন ড্রপডাউন
-    cur.execute("SELECT DISTINCT section FROM processes WHERE is_active = 1 ORDER BY section")
-    # এখানেও একই ভাবে ডাটা ক্লিন করা হয়েছে
-    sections = [row['section'] for row in cur.fetchall()]
-
-    # টেবিলের ডাটা (এটি ডিকশনারি থাকলেও সমস্যা নেই কারণ Jinja2 তে key দিয়ে কল করা যায়)
-    cur.execute("SELECT * FROM hourly_targets ORDER BY id DESC LIMIT 20")
+    # ৩. টেবিলের জন্য ডাটা
+    cur.execute("SELECT * FROM hourly_targets ORDER BY updated_at DESC LIMIT 20")
     targets = cur.fetchall()
 
     cur.close()
