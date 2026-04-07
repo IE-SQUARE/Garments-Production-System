@@ -3,27 +3,28 @@
 {% block content %}
 <style>
     .card { border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border: none; margin-bottom: 20px; }
-    .card-header { background-color: #007bff; color: white; font-weight: bold; border-radius: 8px 8px 0 0 !important; }
-    .btn-save { background-color: #28a745; color: white; border: none; font-weight: bold; width: 100%; border-radius: 4px; padding: 10px; }
-    .btn-save:hover { background-color: #218838; }
-    .form-label { font-weight: 600; margin-bottom: 5px; display: block; }
-    .table thead { background-color: #1a4567; color: white; }
+    .card-header { background-color: #1a4567; color: white; font-weight: bold; border-radius: 8px 8px 0 0 !important; padding: 12px; }
+    .btn-save { background-color: #1a4567; color: white; border: none; font-weight: bold; width: 100%; border-radius: 4px; padding: 8px; }
+    .btn-save:hover { background-color: #14354f; color: #fff; }
+    .form-label { font-weight: 600; margin-bottom: 5px; display: block; font-size: 14px; }
+    .table thead { background-color: #1a4567; color: white; font-size: 14px; }
     .container-fluid { padding: 20px; }
+    .form-control { border-radius: 4px; height: 38px; }
 </style>
 
 <div class="container-fluid">
     <h3 class="mb-4" style="color: #1a4567; font-weight: bold;">Set Hourly Target (Style & Process Wise)</h3>
 
-    <div class="card">
-        <div class="card-header text-center" style="font-size: 1.2rem;">
+    <div class="card shadow-sm">
+        <div class="card-header">
             Target Setting Dashboard
         </div>
         <div class="card-body">
             <form method="POST">
-                <div class="row">
-                    <div class="col-md-12 mb-3">
-                        <label class="form-label">Search Buyer / Style / Color / Item:</label>
-                        <input list="styles" name="style_label" id="style_input" class="form-control" placeholder="Start typing to search..." required autocomplete="off">
+                <div class="row align-items-end">
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Search Style (Buyer/Style/Color/Item):</label>
+                        <input list="styles" name="style_label" id="style_input" class="form-control" placeholder="-- Search & Select Style --" required autocomplete="off">
                         <datalist id="styles">
                             {% for style in master_rows %}
                                 <option value="{{ style }}">
@@ -31,30 +32,30 @@
                         </datalist>
                     </div>
 
-                    <div class="col-md-4 mb-3">
-                        <label class="form-label">Section:</label>
+                    <div class="col-md-2 mb-3">
+                        <label class="form-label">Select Section:</label>
                         <select name="section" id="section_select" class="form-control" required onchange="loadProcesses(this.value)">
-                            <option value="">-- Choose Section --</option>
+                            <option value="">-- Section --</option>
                             {% for sec in sections %}
                                 <option value="{{ sec }}">{{ sec }}</option>
                             {% endfor %}
                         </select>
                     </div>
 
-                    <div class="col-md-4 mb-3">
+                    <div class="col-md-3 mb-3">
                         <label class="form-label">Process Name:</label>
                         <select name="process" id="process_select" class="form-control" required>
                             <option value="">-- Select Process --</option>
                         </select>
                     </div>
 
-                    <div class="col-md-2 mb-3">
-                        <label class="form-label">Hourly Target Qty:</label>
-                        <input type="number" name="target" class="form-control" placeholder="Qty" required>
+                    <div class="col-md-1 mb-3">
+                        <label class="form-label">Target Qty:</label>
+                        <input type="number" name="target" class="form-control" placeholder="Qty" required min="1">
                     </div>
+
                     <div class="col-md-2 mb-3">
-                        <label class="form-label">&nbsp;</label>
-                        <button type="submit" class="btn btn-save">SET HOURLY TARGET</button>
+                        <button type="submit" class="btn btn-save">Save Target</button>
                     </div>
                 </div>
             </form>
@@ -62,12 +63,12 @@
     </div>
 
     <div class="mt-4">
-        <h4 class="mb-3" style="color: #1a4567; font-weight: bold;">Current Target List</h4>
+        <h4 class="mb-3" style="color: #1a4567; font-weight: bold; font-size: 1.2rem;">Current Target List</h4>
         <div class="table-responsive bg-white rounded shadow-sm">
             <table class="table table-bordered table-hover mb-0">
                 <thead>
                     <tr>
-                        <th>Style Details (Buyer/Style/Color)</th>
+                        <th style="width: 40%;">Style Details</th>
                         <th>Section</th>
                         <th>Process Name</th>
                         <th class="text-center">Target</th>
@@ -77,11 +78,15 @@
                 <tbody>
                     {% for t in targets %}
                     <tr>
-                        <td>{{ t.buyer }} / {{ t.style }} / {{ t.color }}</td>
+                        <td>{{ t.buyer }} / {{ t.style }} / {{ t.color }} / {{ t.item }}</td>
                         <td>{{ t.section_name }}</td>
                         <td>{{ t.process_name }}</td>
-                        <td class="text-center font-weight-bold" style="color: #007bff;">{{ t.target_qty }}</td>
+                        <td class="text-center font-weight-bold" style="color: #1a4567;">{{ t.target_qty }}</td>
                         <td class="small text-muted">{{ t.updated_at.strftime('%d-%b %I:%M %p') if t.updated_at else '' }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center text-muted">No data available</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -94,10 +99,13 @@
 function loadProcesses(sectionName) {
     const processSelect = document.getElementById('process_select');
     processSelect.innerHTML = '<option value="">Loading...</option>';
+
     if (!sectionName) {
         processSelect.innerHTML = '<option value="">-- Select Process --</option>';
         return;
     }
+
+    // Your backend API route to get processes
     fetch('/get_processes_for_target/' + encodeURIComponent(sectionName))
         .then(response => response.json())
         .then(data => {
@@ -110,6 +118,7 @@ function loadProcesses(sectionName) {
             });
         })
         .catch(err => {
+            console.error('Error:', err);
             processSelect.innerHTML = '<option value="">Error!</option>';
         });
 }
