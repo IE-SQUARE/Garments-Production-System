@@ -1215,7 +1215,7 @@ def set_hourly_target():
             return redirect(url_for("set_hourly_target"))
 
     # ১. বায়ার/স্টাইল লিস্ট (RealDictRow এর ঝামেলা এড়াতে শুধু স্ট্রিং লিস্ট তৈরি)
-    cur.execute("SELECT buyer || ' / ' || style || ' / ' || color || ' / ' || item AS label FROM master_data WHERE is_active = 1")
+    cur.execute("SELECT DISTINCT buyer || ' / ' || style || ' / ' || color || ' / ' || item AS label FROM master_data WHERE is_active = 1")
     master_rows = [row['label'] for row in cur.fetchall()]
 
     # ২. সেকশন লিস্ট (RealDictRow এর বদলে শুধু নাম)
