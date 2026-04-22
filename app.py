@@ -479,84 +479,94 @@ def logout():
 # =========================
 
 @app.route('/create_batch', methods=['GET','POST'])
+@login_required # নিরাপত্তা নিশ্চিত করা
 def create_batch():
-
     today = date.today()
-
     conn = db()
     cur = conn.cursor()
 
     if request.method == "POST":
+        try:
+            now = datetime.now()
+            # বছর এবং মাস দিয়ে প্রিফিক্স (যেমন: ২০২৬ সালের এপ্রিল হলে ২৬০৪)
+            prefix = now.strftime("%y%m")
 
-        now = datetime.now()
+            batch_date = request.form.get("batch_date")
+            master_label = request.form.get("master_label", "")
+            wash_type = request.form.get("wash_type")
+            qty = request.form.get("qty") or 0
+            weight = request.form.get("weight") or 0
+            priority = request.form.get("priority")
 
-        year = now.strftime("%y")
-        month = now.strftime("%m")
+            # ১. মাস্টার লেবেল স্প্লিট করা (নিরাপদ পদ্ধতি)
+            if " / " in master_label:
+                parts = master_label.split(" / ")
+                if len(parts) == 4:
+                    buyer, style, color, item = parts
+                else:
+                    return "Error: Invalid label format!", 400
+            else:
+                return "Error: Please select a valid style!", 400
 
-        prefix = year + month
+            # ২. ব্যাচ নম্বর জেনারেশন (ডুপ্লিকেট রোখার জন্য)
+            cur.execute("""
+                SELECT batch_number 
+                FROM batches 
+                WHERE CAST(batch_number AS TEXT) LIKE %s 
+                ORDER BY batch_number DESC LIMIT 1
+            """, (prefix + "%",))
+            last = cur.fetchone()
 
-        batch_date = request.form.get("batch_date")
-        master_label = request.form.get("master_label")
-        wash_type = request.form.get("wash_type")
-        qty = request.form.get("qty")
-        weight = request.form.get("weight")
-        priority = request.form.get("priority")
+            if last and last["batch_number"]:
+                # শেষ ৩টি ডিজিট নিয়ে সিরিয়াল বাড়ানো
+                last_serial = int(str(last["batch_number"])[-3:])
+                serial = last_serial + 1
+            else:
+                serial = 1
 
+            # চূড়ান্ত ব্যাচ নম্বর (যেমন: ২৬০৪০০১)
+            batch_number = int(prefix + str(serial).zfill(3))
+
+            # ৩. ডাটা ইনসার্ট করা
+            cur.execute("""
+                INSERT INTO batches 
+                (batch_number, batch_date, buyer, style, color, item, wash_type, batch_qty, batch_weight, priority)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """, (batch_number, batch_date, buyer, style, color, item, wash_type, qty, weight, priority))
+
+            conn.commit()
+            return redirect("/create_batch")
+
+        except Exception as e:
+            conn.rollback()
+            print(f"Error in Batch Creation: {e}")
+            return f"Internal Error: {str(e)}", 500
+        finally:
+            # ৪. কানেকশন ক্লোজ করা (খুবই গুরুত্বপূর্ণ)
+            cur.close()
+            conn.close()
+
+    # GET মেথড: ড্রপডাউন এবং টেবিল লিস্টের জন্য ডাটা আনা
+    try:
+        # ড্রপডাউনে ডুপ্লিকেট সরানো
         cur.execute("""
-            SELECT batch_number
-            FROM batches
-            WHERE batch_number LIKE %s
-            ORDER BY batch_number DESC
-            LIMIT 1
-        """,(prefix + "%",))
+            SELECT DISTINCT buyer || ' / ' || style || ' / ' || color || ' / ' || item AS label
+            FROM master_data
+            WHERE is_active = 1
+            ORDER BY label
+        """)
+        master_rows = cur.fetchall()
 
-        last = cur.fetchone()
-
-        if last:
-            last_serial = int(str(last["batch_number"])[4:])
-            serial = last_serial + 1
-        else:
-            serial = 1
-
-        batch_number = int(prefix + str(serial).zfill(3))
-
-        buyer,style,color,item = master_label.split(" / ")
-
-        cur.execute("""
-            INSERT INTO batches
-            (batch_number,batch_date,buyer,style,color,item,wash_type,batch_qty,batch_weight,priority)
-            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
-        """,(batch_number,batch_date,buyer,style,color,item,wash_type,qty,weight,priority))
-
-        conn.commit()
-
-        return redirect("/create_batch")
-
-    # dropdown label
-    cur.execute("""
-SELECT CONCAT(buyer,' / ',style,' / ',color,' / ',item) AS label
-FROM master_data
-ORDER BY buyer,style,color,item
-""")
-    master_rows = cur.fetchall()
-
-    # batch list
-    cur.execute("""
-        SELECT
-        batch_number,
-        buyer,
-        style,
-        color,
-        item,
-        wash_type,
-        batch_qty,
-        batch_weight,
-        priority,
-        created_at
-        FROM batches
-        ORDER BY id DESC
-    """)
-    batches = cur.fetchall()
+        # ব্যাচ লিস্ট (সর্বশেষ ২০টি)
+        cur.execute("SELECT * FROM batches ORDER BY id DESC LIMIT 20")
+        batches = cur.fetchall()
+        
+    except Exception as e:
+        print(f"Fetch Error: {e}")
+        master_rows, batches = [], []
+    finally:
+        cur.close()
+        conn.close()
 
     return render_template(
         "create_batch.html",
@@ -564,7 +574,6 @@ ORDER BY buyer,style,color,item
         batches=batches,
         today=today
     )
-
 @app.route("/print_batch/<int:batch_no>")
 def print_batch(batch_no):
 
