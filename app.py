@@ -1213,57 +1213,53 @@ def user_access():
 
     return render_template('user_access.html', users=all_users, selected_user=selected_user, user_permissions=user_permissions)
 
-@app.route("/set_hourly_target", methods=["GET", "POST"])
+@app.route('/set_hourly_target', methods=['GET', 'POST'])
 @login_required
 def set_hourly_target():
     conn = db()
     cur = conn.cursor()
+    
+    if request.method == 'POST':
+        try:
+            master_label = request.form.get('master_label', "")
+            process_name = request.form.get('process_name')
+            target_qty = request.form.get('target_qty')
 
-    # ডাটাবেস টেবিল চেক এবং কলাম যোগ করা (যদি না থাকে)
-    try:
-        cur.execute("ALTER TABLE hourly_targets ADD COLUMN IF NOT EXISTS buyer VARCHAR(255);")
-        cur.execute("ALTER TABLE hourly_targets ADD COLUMN IF NOT EXISTS color VARCHAR(255);")
-        cur.execute("ALTER TABLE hourly_targets ADD COLUMN IF NOT EXISTS item VARCHAR(255);")
-        conn.commit()
-    except:
-        conn.rollback()
-
-    if request.method == "POST":
-        style_label = request.form.get("style_label")
-        section = request.form.get("section")
-        process = request.form.get("process")
-        target = request.form.get("target")
-
-        if style_label and section and process and target:
-            # "Buyer / Style / Color / Item" ফরম্যাট থেকে ডাটা আলাদা করা
-            parts = [p.strip() for p in style_label.split("/")]
-            if len(parts) >= 4:
-                buyer, style, color, item = parts[0], parts[1], parts[2], parts[3]
+            # লেবেল স্প্লিট করা
+            parts = [p.strip() for p in master_label.split("/")]
+            if len(parts) == 4:
+                buyer, style, color, item = parts
                 
                 cur.execute("""
-                    INSERT INTO hourly_targets (buyer, style, color, item, section_name, process_name, target_qty)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s)
-                    ON CONFLICT (buyer, style, color, item, section_name, process_name) 
-                    DO UPDATE SET target_qty = EXCLUDED.target_qty, updated_at = CURRENT_TIMESTAMP
-                """, (buyer, style, color, item, section, process, target))
+                    INSERT INTO hourly_targets (buyer, style, color, item, process_name, target_qty)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                """, (buyer, style, color, item, process_name, target_qty))
+                
                 conn.commit()
-            return redirect(url_for("set_hourly_target"))
+            else:
+                return "Error: Invalid Style Format!", 400
 
-    # ১. বায়ার/স্টাইল লিস্ট (RealDictRow এর ঝামেলা এড়াতে শুধু স্ট্রিং লিস্ট তৈরি)
-    cur.execute("SELECT DISTINCT buyer || ' / ' || style || ' / ' || color || ' / ' || item AS label FROM master_data WHERE is_active = 1")
-    master_rows = [row['label'] for row in cur.fetchall()]
+        except Exception as e:
+            conn.rollback()
+            return f"Error: {str(e)}", 500
+        finally:
+            cur.close()
+            conn.close()
+        return redirect(url_for('set_hourly_target'))
 
-    # ২. সেকশন লিস্ট (RealDictRow এর বদলে শুধু নাম)
-    cur.execute("SELECT DISTINCT section FROM processes WHERE is_active = 1")
-    sections = [row['section'] for row in cur.fetchall()]
+    # ডাটা নিয়ে আসা
+    cur.execute("""
+        SELECT DISTINCT buyer || ' / ' || style || ' / ' || color || ' / ' || item AS label 
+        FROM master_data WHERE is_active=1 ORDER BY label
+    """)
+    master_rows = cur.fetchall()
 
-    # ৩. টেবিলের জন্য ডাটা
-    cur.execute("SELECT * FROM hourly_targets ORDER BY updated_at DESC LIMIT 20")
+    cur.execute("SELECT * FROM hourly_targets ORDER BY id DESC LIMIT 20")
     targets = cur.fetchall()
-
+    
     cur.close()
     conn.close()
-    return render_template("set_target.html", master_rows=master_rows, sections=sections, targets=targets)
+    return render_template('set_hourly_target.html', master_rows=master_rows, targets=targets)
 @app.route("/get_processes_for_target/<section>")
 @login_required
 def get_processes_for_target(section):
