@@ -667,6 +667,8 @@ def batch_info(batch_no):
         <p>Batch: {batch['batch_number']}</p>
         <p>Buyer: {batch['buyer']}</p>
         <p>Style: {batch['style']}</p>
+        <p>Color: {batch['color']}</p>
+        <p>Wash Type: {batch['wash_type']}</p>
         <p>Qty: {batch['batch_qty']}</p>
         """
     else:
