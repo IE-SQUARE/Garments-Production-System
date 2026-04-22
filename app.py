@@ -87,20 +87,22 @@ def login_required(f):
 # =========================
 
 def generate_qr(batch_no):
-    # আপনার রেন্ডার অ্যাপের ডোমেইন অটোমেটিক পাওয়ার জন্য request.host_url ব্যবহার করা ভালো
+    # request.host_url ব্যবহার করলে এটি অটোমেটিক রেন্ডার বা লোকালহোস্টের ইউআরএল নিয়ে নিবে
     base_url = request.host_url.rstrip('/') 
     url = f"{base_url}/batch_info/{batch_no}"
+    
+    print(f"Generating QR for: {url}") # এটি লগে চেক করার জন্য
 
     img = qrcode.make(url)
     
-    # ফোল্ডার না থাকলে তৈরি করে নিবে
-    path_dir = "static/qr"
+    path_dir = os.path.join(app.root_path, 'static', 'qr')
     if not os.path.exists(path_dir):
         os.makedirs(path_dir)
 
-    path = f"{path_dir}/{batch_no}.png"
+    filename = f"{batch_no}.png"
+    path = os.path.join(path_dir, filename)
     img.save(path)
-    return path
+    return f"qr/{filename}"
 
 @app.route("/print_batch/<int:batch_no>")
 @login_required # নিরাপত্তা নিশ্চিত করা
@@ -651,22 +653,24 @@ def update_batch():
 
 @app.route("/batch_info/<int:batch_no>")
 def batch_info(batch_no):
-
     conn = db()
     cur = conn.cursor()
-
-    cur.execute("""
-        SELECT *
-        FROM batches
-        WHERE batch_number=%s
-    """,(batch_no,))
-
+    cur.execute("SELECT * FROM batches WHERE batch_number=%s", (batch_no,))
     batch = cur.fetchone()
-
-    return render_template(
-        "batch_info.html",
-        batch=batch
-    )
+    cur.close()
+    conn.close()
+    
+    if batch:
+        # আপনি এই ডাটাগুলো একটি সিম্পল পেজে দেখাতে পারেন
+        return f"""
+        <h1>Batch Details</h1>
+        <p>Batch: {batch['batch_number']}</p>
+        <p>Buyer: {batch['buyer']}</p>
+        <p>Style: {batch['style']}</p>
+        <p>Qty: {batch['batch_qty']}</p>
+        """
+    else:
+        return "Batch Not Found!", 404
 
 @app.route("/operator_status")
 @login_required
