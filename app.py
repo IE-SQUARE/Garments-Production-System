@@ -86,16 +86,48 @@ def login_required(f):
 # =========================
 
 def generate_qr(batch_no):
-
-    url = f"http://127.0.0.1:5000/batch_info/{batch_no}"
+    # আপনার রেন্ডার অ্যাপের ডোমেইন অটোমেটিক পাওয়ার জন্য request.host_url ব্যবহার করা ভালো
+    base_url = request.host_url.rstrip('/') 
+    url = f"{base_url}/batch_info/{batch_no}"
 
     img = qrcode.make(url)
+    
+    # ফোল্ডার না থাকলে তৈরি করে নিবে
+    path_dir = "static/qr"
+    if not os.path.exists(path_dir):
+        os.makedirs(path_dir)
 
-    path = f"static/qr/{batch_no}.png"
-
+    path = f"{path_dir}/{batch_no}.png"
     img.save(path)
-
     return path
+
+@app.route("/print_batch/<int:batch_no>")
+@login_required # নিরাপত্তা নিশ্চিত করা
+def print_batch(batch_no):
+    conn = db()
+    cur = conn.cursor()
+    try:
+        cur.execute("SELECT * FROM batches WHERE batch_number=%s", (batch_no,))
+        batch = cur.fetchone()
+
+        if not batch:
+            return "Batch not found!", 404
+
+        # QR জেনারেট করা
+        qr_path = generate_qr(batch_no)
+
+        return render_template(
+            "batch_card.html",
+            batch=batch,
+            qr_path=qr_path
+        )
+    except Exception as e:
+        print(f"Print Batch Error: {e}")
+        return f"Error: {str(e)}", 500
+    finally:
+        # ডাটাবেস কানেকশন ক্লোজ
+        cur.close()
+        conn.close()
 
 @app.route("/")
 def home():
@@ -573,22 +605,6 @@ def create_batch():
         master_rows=master_rows,
         batches=batches,
         today=today
-    )
-@app.route("/print_batch/<int:batch_no>")
-def print_batch(batch_no):
-
-    conn = db()
-    cur = conn.cursor()
-
-    cur.execute("SELECT * FROM batches WHERE batch_number=%s",(batch_no,))
-    batch = cur.fetchone()
-
-    qr_path = generate_qr(batch_no)
-
-    return render_template(
-        "batch_card.html",
-        batch=batch,
-        qr_path=qr_path
     )
 @app.route("/delete_batch/<int:batch_no>", methods=["POST"])
 def delete_batch(batch_no):
