@@ -1046,37 +1046,48 @@ def bulk_import_buyer():
         return "No file selected", 400
 
     if file and file.filename.endswith('.csv'):
+        # UTF-8 encoding ensuring with sig for Excel CSV
         csv_file = TextIOWrapper(file.stream, encoding='utf-8-sig')
         reader = csv.DictReader(csv_file)
         
-        # স্পেস বা ইনভিজিবল ক্যারেক্টার হ্যান্ডেল করার জন্য
+        # হেডার ক্লিন করা
         reader.fieldnames = [name.strip() for name in reader.fieldnames]
         
         conn = db()
         cur = conn.cursor()
         
         try:
+            count = 0
             for row in reader:
-                # CSV থেকে ডাটা নেওয়া (ভ্যারিয়েবল নাম আপনার CSV হেডার অনুযায়ী হবে)
+                # CSV থেকে ডাটা নেওয়া (বড় হাত বা ছোট হাতের হেডার যাই থাক)
                 buyer = (row.get('Buyer') or row.get('buyer') or "").strip()
                 style = (row.get('Style') or row.get('style') or "").strip()
                 color = (row.get('Color') or row.get('color') or "").strip()
                 item = (row.get('Item') or row.get('item') or "").strip()
 
                 if not buyer or not style:
+                    print(f"Skipping row due to missing data: {row}")
                     continue
 
-                # ডাটাবেস কলামের নাম অনুযায়ী কুয়েরি (buyer_name এর বদলে buyer)
+                # ডাটাবেসে ইনসার্ট
                 cur.execute("""
                     INSERT INTO master_data (buyer, style, color, item, is_active)
                     VALUES (%s, %s, %s, %s, 1)
                     ON CONFLICT DO NOTHING
                 """, (buyer, style, color, item))
                 
-            conn.commit()
-            return "Bulk data processed successfully!"
+                # যদি ON CONFLICT না থাকে তবে উপরের লাইনটি নিচের মতো লিখুন:
+                # cur.execute("INSERT INTO master_data (buyer, style, color, item, is_active) VALUES (%s, %s, %s, %s, 1)", (buyer, style, color, item))
+                
+                count += 1
+            
+            conn.commit() # এটি মাস্ট লাগবে
+            print(f"Successfully processed {count} rows")
+            return f"Success! {count} rows processed."
+            
         except Exception as e:
             conn.rollback()
+            print(f"Database Error: {str(e)}")
             return f"Database Error: {str(e)}", 500
         finally:
             cur.close()
