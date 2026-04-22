@@ -1042,16 +1042,13 @@ def bulk_import_buyer():
         return "No file uploaded", 400
     
     file = request.files['file']
-    if file.filename == '':
-        return "No file selected", 400
-
     if file and file.filename.endswith('.csv'):
-        # UTF-8 encoding ensuring with sig for Excel CSV
+        # utf-8-sig ব্যবহার করা হয়েছে যাতে এক্সেল থেকে সেভ করা CSV-র ইনভিজিবল ক্যারেক্টার সমস্যা না করে
         csv_file = TextIOWrapper(file.stream, encoding='utf-8-sig')
         reader = csv.DictReader(csv_file)
         
-        # হেডার ক্লিন করা
-        reader.fieldnames = [name.strip() for name in reader.fieldnames]
+        # হেডার ট্রিম এবং ছোট হাতের অক্ষরে কনভার্ট (যেমন: Buyer -> buyer)
+        reader.fieldnames = [name.strip().lower() for name in reader.fieldnames]
         
         conn = db()
         cur = conn.cursor()
@@ -1059,41 +1056,36 @@ def bulk_import_buyer():
         try:
             count = 0
             for row in reader:
-                # CSV থেকে ডাটা নেওয়া (বড় হাত বা ছোট হাতের হেডার যাই থাক)
-                buyer = (row.get('Buyer') or row.get('buyer') or "").strip()
-                style = (row.get('Style') or row.get('style') or "").strip()
-                color = (row.get('Color') or row.get('color') or "").strip()
-                item = (row.get('Item') or row.get('item') or "").strip()
+                # CSV থেকে ডাটা নেওয়া এবং বাড়তি স্পেস ডিলিট করা
+                buyer = (row.get('buyer') or "").strip()
+                style = (row.get('style') or "").strip()
+                color = (row.get('color') or "").strip()
+                item = (row.get('item') or "").strip()
 
-                if not buyer or not style:
-                    print(f"Skipping row due to missing data: {row}")
-                    continue
-
-                # ডাটাবেসে ইনসার্ট
-                cur.execute("""
-                    INSERT INTO master_data (buyer, style, color, item, is_active)
-                    VALUES (%s, %s, %s, %s, 1)
-                    ON CONFLICT DO NOTHING
-                """, (buyer, style, color, item))
-                
-                # যদি ON CONFLICT না থাকে তবে উপরের লাইনটি নিচের মতো লিখুন:
-                # cur.execute("INSERT INTO master_data (buyer, style, color, item, is_active) VALUES (%s, %s, %s, %s, 1)", (buyer, style, color, item))
-                
-                count += 1
+                if buyer and style:
+                    # ডুপ্লিকেট রোধে এই কুয়েরিটি সবচেয়ে নিরাপদ
+                    # যদি বায়ার, স্টাইল, কালার ও আইটেম হুবহু মিলে যায় তবে ডাটা ইনসার্ট হবে না
+                    cur.execute("""
+                        INSERT INTO master_data (buyer, style, color, item, is_active)
+                        VALUES (%s, %s, %s, %s, 1)
+                        ON CONFLICT (buyer, style, color, item) DO NOTHING
+                    """, (buyer, style, color, item))
+                    
+                    # যদি রো ইনসার্ট হয় তবে কাউন্ট বাড়বে
+                    if cur.rowcount > 0:
+                        count += 1
             
-            conn.commit() # এটি মাস্ট লাগবে
-            print(f"Successfully processed {count} rows")
-            return f"Success! {count} rows processed."
+            conn.commit()
+            return f"Success! {count} new rows added. Duplicates were skipped."
             
         except Exception as e:
             conn.rollback()
-            print(f"Database Error: {str(e)}")
             return f"Database Error: {str(e)}", 500
         finally:
             cur.close()
             conn.close()
     
-    return "Invalid file format. Please upload a .csv file.", 400
+    return "Invalid file format", 400
 
 @app.route('/style_details')
 @login_required
