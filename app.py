@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, redirect, session, jsonify
 from flask_cors import CORS
+from flask import request
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from datetime import datetime, date
