@@ -1225,7 +1225,7 @@ def set_hourly_target():
             process_name = request.form.get('process_name')
             target_qty = request.form.get('target_qty')
 
-            # লেবেল স্প্লিট করা
+            # ডাটা স্প্লিট করা
             parts = [p.strip() for p in master_label.split("/")]
             if len(parts) == 4:
                 buyer, style, color, item = parts
@@ -1236,30 +1236,37 @@ def set_hourly_target():
                 """, (buyer, style, color, item, process_name, target_qty))
                 
                 conn.commit()
+                return redirect(url_for('set_hourly_target'))
             else:
-                return "Error: Invalid Style Format!", 400
+                return "Invalid selection format!", 400
 
         except Exception as e:
             conn.rollback()
-            return f"Error: {str(e)}", 500
+            print(f"Post Error: {e}") # এটি আপনার কনসোলে এরর দেখাবে
+            return f"Database Error: {str(e)}", 500
         finally:
             cur.close()
             conn.close()
-        return redirect(url_for('set_hourly_target'))
 
-    # ডাটা নিয়ে আসা
-    cur.execute("""
-        SELECT DISTINCT buyer || ' / ' || style || ' / ' || color || ' / ' || item AS label 
-        FROM master_data WHERE is_active=1 ORDER BY label
-    """)
-    master_rows = cur.fetchall()
+    # GET পার্ট
+    try:
+        cur.execute("""
+            SELECT DISTINCT buyer || ' / ' || style || ' / ' || color || ' / ' || item AS label 
+            FROM master_data WHERE is_active=1 ORDER BY label
+        """)
+        master_rows = cur.fetchall()
 
-    cur.execute("SELECT * FROM hourly_targets ORDER BY id DESC LIMIT 20")
-    targets = cur.fetchall()
-    
-    cur.close()
-    conn.close()
-    return render_template('set_hourly_target.html', master_rows=master_rows, targets=targets)
+        # টেবিলের জন্য ডাটা আনা
+        cur.execute("SELECT * FROM hourly_targets ORDER BY id DESC")
+        targets = cur.fetchall()
+        
+        return render_template('set_hourly_target.html', master_rows=master_rows, targets=targets)
+    except Exception as e:
+        print(f"Fetch Error: {e}")
+        return f"Fetch Error: {str(e)}", 500
+    finally:
+        cur.close()
+        conn.close()
 @app.route("/get_processes_for_target/<section>")
 @login_required
 def get_processes_for_target(section):
