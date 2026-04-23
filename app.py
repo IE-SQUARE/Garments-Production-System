@@ -1260,7 +1260,7 @@ def set_hourly_target():
         cur.execute("SELECT * FROM hourly_targets ORDER BY id DESC")
         targets = cur.fetchall()
         
-        return render_template('set_hourly_target.html', master_rows=master_rows, targets=targets)
+        return render_template('set_target.html', master_rows=master_rows, targets=targets)
     except Exception as e:
         print(f"Fetch Error: {e}")
         return f"Fetch Error: {str(e)}", 500
